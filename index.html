@@ -158,6 +158,16 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
         <div class="lbl">🎙️ Live transcript <span class="muted" style="text-transform:none;letter-spacing:0">· what the AI is hearing</span></div>
         <div id="transcript" class="transcript"><span class="muted">—</span></div>
       </div>
+
+      <div class="panel">
+        <div class="lbl">💬 Talk to the prospect <span class="muted" style="text-transform:none;letter-spacing:0">· type and Renee replies in character (live AI)</span></div>
+        <div id="aiStatus" class="muted" style="font-size:.74rem;margin-bottom:7px"></div>
+        <div style="display:flex;gap:7px">
+          <input id="chatInput" type="text" placeholder="Type what you'd say to Renee…" autocomplete="off" style="flex:1;padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.85rem">
+          <button id="sendBtn" class="btn primary">Send ▸</button>
+        </div>
+        <div style="margin-top:7px"><button id="keyBtn" class="btn ghost" style="font-size:.74rem;padding:6px 10px">🔑 Connect AI prospect</button></div>
+      </div>
     </div>
   </div>
   <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI.</div>
@@ -292,6 +302,72 @@ $('muteBtn').onclick=()=>{ muted=!muted; $('muteBtn').textContent=muted?'🔇 Vo
   if(muted){ if('speechSynthesis'in window)speechSynthesis.cancel(); if(curAudio){try{curAudio.pause()}catch(e){}} } };
 document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');});
 $('nextBtn').onclick=()=>{ if(document.querySelector('.opt.sel[data-o="booked"]'))bump('s-book'); toast('Logged ✓ — advancing to next prospect'); };
+
+/* ===== Interactive mode: type to talk to Renee (live AI) ===== */
+function esc(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function getKey(){return localStorage.getItem('anthropic_key')||'';}
+function setAiStatus(){ const k=getKey();
+  $('aiStatus').innerHTML = k
+    ? '🟢 AI prospect connected — type below and Renee answers in character (and the cockpit updates from what she says).'
+    : '⚪ Not connected. Click “Connect AI prospect” and paste your Anthropic API key (kept only in this browser). The scripted ▶ Start call works without it.';
+}
+$('keyBtn').onclick=()=>{ const cur=getKey();
+  const k=prompt('Paste your Anthropic API key.\nIt is stored ONLY in this browser (localStorage) — never uploaded or committed.', cur);
+  if(k!==null){ if(k.trim()) localStorage.setItem('anthropic_key',k.trim()); else localStorage.removeItem('anthropic_key'); setAiStatus(); } };
+
+function ttsUrl(t){ return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q='+encodeURIComponent(String(t).slice(0,190)); }
+
+let convo=[];
+const RENEE_SYS = "You are Renee Webb, owner of Webb Logistics (3 trucks), on a live sales call. A rep is selling you an EPIC LIFE membership: $500 setup + $300/month (business growth + financial protection). Stay fully in character: realistic, busy, a little guarded; ask normal questions; raise natural objections (price, needing to talk to your partner, skepticism); warm up if the rep handles you well. Keep every reply to 1-2 short sentences, under 30 words — it will be spoken aloud. You are ALSO the rep's silent sales co-pilot analyzing the call. Reply with ONLY a raw JSON object (no markdown, no backticks): {\"reply\":\"what Renee says out loud\",\"bant\":{\"budget\":\"\",\"authority\":\"\",\"need\":\"\",\"timeline\":\"\"},\"signal\":null,\"objection\":null,\"note\":\"\",\"closer\":\"\"}. Only fill bant fields you can infer so far; leave the rest empty. Set \"signal\" to {\"tag\":\"...\",\"severity\":\"pos|soft|hard\",\"evidence\":\"quote\"} ONLY when she shows a real green/red signal (e.g. coachable, high intent, blamer/victim, can't afford, uncoachable). Set \"objection\" to {\"text\":\"...\",\"agree\":\"...\",\"reframe\":\"...\"} ONLY when she actually objects. Set \"closer\" to the current CLOSER stage (Clarify|Label|Overview|Sell|Explain|Reinforce) or empty.";
+
+async function askRenee(key){
+  const body={ model:'claude-haiku-4-5-20251001', max_tokens:400, system:RENEE_SYS, messages:convo };
+  const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
+    headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify(body) });
+  if(!r.ok){ throw new Error(r.status+' '+(await r.text()).slice(0,140)); }
+  const j=await r.json();
+  let txt=(j.content&&j.content[0]&&j.content[0].text)||'{}';
+  txt=txt.replace(/```json/gi,'').replace(/```/g,'').trim();
+  const a=txt.indexOf('{'), b=txt.lastIndexOf('}'); if(a>=0&&b>=0) txt=txt.slice(a,b+1);
+  return JSON.parse(txt);
+}
+function applyAI(d){
+  if(d.bant){
+    if(d.bant.budget) setBant('b-budget',d.bant.budget,/no|can.?t|tight|too much/i.test(d.bant.budget)?'warn':'ok');
+    if(d.bant.authority) setBant('b-auth',d.bant.authority,/partner|spouse|no|check|boss/i.test(d.bant.authority)?'warn':'ok');
+    if(d.bant.need) setBant('b-need',d.bant.need,'ok');
+    if(d.bant.timeline) setBant('b-time',d.bant.timeline,'ok');
+  }
+  if(d.signal&&d.signal.tag){ const sev=d.signal.severity==='pos'?'pos':(d.signal.severity==='hard'?'hard':'soft');
+    addChip(d.signal.tag,sev,true); if(sev!=='pos') flagAlert(d.signal.tag,d.signal.evidence||''); }
+  if(d.objection&&d.objection.text){
+    $('objBox').innerHTML='<div class="obj"><div class="h">⚠ Objection heard — “'+esc(d.objection.text)+'”</div>'+
+     '<div class="r"><div class="t">1 · Agree</div><div class="x">'+esc(d.objection.agree)+'</div></div>'+
+     '<div class="r"><div class="t">2 · Reframe with a story</div><div class="x">'+esc(d.objection.reframe)+'</div></div></div>'; }
+  if(d.note) addNote(d.note);
+  if(d.closer) setCloser(d.closer,'live');
+}
+async function sendChat(){
+  const txt=$('chatInput').value.trim(); if(!txt) return;
+  const key=getKey();
+  if(!key){ toast('Connect your Anthropic key to chat live'); $('keyBtn').click(); return; }
+  $('chatInput').value=''; addTranscript('You',txt);
+  convo.push({role:'user',content:txt});
+  $('sendBtn').disabled=true; $('sendBtn').textContent='…';
+  if($('status').classList.contains('idle')){ $('status').className='pill live'; $('status').innerHTML='🎙️ listening'; }
+  try{
+    const d=await askRenee(key);
+    convo.push({role:'assistant',content:JSON.stringify(d)});
+    if(d.reply){ addTranscript('Renee',d.reply); }
+    applyAI(d);
+    if(d.reply){ await play(ttsUrl(d.reply), d.reply); }
+  }catch(e){ toast('AI error — check your key'); addTranscript('Renee','(couldn’t reach the AI: '+esc(e.message)+')'); }
+  $('sendBtn').disabled=false; $('sendBtn').textContent='Send ▸';
+}
+$('sendBtn').onclick=sendChat;
+$('chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendChat(); } });
+setAiStatus();
 </script>
 </body>
 </html>
