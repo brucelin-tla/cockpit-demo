@@ -266,7 +266,7 @@ body{padding-bottom:104px}
       </div></div>
     </div>
   </div>
-  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.7</span></div>
+  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.8</span></div>
 </div>
 
 <div id="chatbar">
@@ -283,7 +283,7 @@ body{padding-bottom:104px}
 
 <script>
 const $=id=>document.getElementById(id);
-let muted=false, voice=null, started=false, curAudio=null;
+let muted=false, voice=null, started=false, curAudio=null, runToken=0;
 
 function pickVoice(){
   const vs=(window.speechSynthesis?speechSynthesis.getVoices():[])||[];
@@ -342,13 +342,13 @@ function showObjection(){
    '<div class="r"><div class="t">2 · Reframe with a story</div><div class="x">“Most owners say that. Dana at Liu Freight did exactly this — we got her partner on a 10-minute call, both saw the numbers, signed that week. Want me to set that up?”</div></div></div>';
 }
 
-/* consent gate — folded into the chip row */
-let consentResolve; const consentDone=new Promise(r=>consentResolve=r);
+/* consent gate — folded into the chip row (fresh promise per call) */
+let consentResolve=null;
 function showConsentChip(){
   const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
   const s=document.createElement('span'); s.className='chip consent'; s.id='consentChip';
   s.innerHTML='🔴 FL — tap: read disclosure';
-  s.onclick=()=>{ s.className='chip consent done'; s.innerHTML='✓ FL · disclosure read'; s.onclick=null; consentResolve(); };
+  s.onclick=()=>{ s.className='chip consent done'; s.innerHTML='✓ FL · disclosure read'; s.onclick=null; if(consentResolve)consentResolve(); };
   c.appendChild(s);
 }
 
@@ -384,24 +384,28 @@ async function applyEffects(s){
 }
 
 async function runCall(){
+  const myToken=++runToken;
   $('status').className='pill live'; $('status').innerHTML='● connecting…';
   $('callBtn').className='btn end'; $('callBtn').innerHTML='⛔ End'; $('callBtn').disabled=false;
   phCall('📲 Incoming call…','ring');
-  await wait(900);
+  await wait(900); if(myToken!==runToken) return;
   $('status').innerHTML='● connected';
   phCall('📞 On call · (305) 555-0142');
   if($('tzStatus').classList.contains('qbad')) toast('⛔ Quiet hours in FL — real cockpit blocks this; demo override');
   bump('s-dials'); bump('s-conn');
   showConsentChip();
   toast('Florida = all-party consent — tap the chip to start');
-  await consentDone;
+  const consentDone=new Promise(r=>consentResolve=r);
+  await consentDone; if(myToken!==runToken) return;
   $('status').innerHTML='🎙️ listening';
   setCloser('Clarify','listening…');
-  await wait(500);
+  await wait(500); if(myToken!==runToken) return;
   for(const s of script){
+    if(myToken!==runToken) return;
     if(s.who==='Renee'){ addTranscript('Renee',s.say); await applyEffects(s); await play(s.aud,s.say); await wait(350); }
     else { addTranscript('You',s.text); await applyEffects(s); await wait(1100); }
   }
+  if(myToken!==runToken) return;
   $('closer-hint').textContent='ready to close';
   phCall(null); phMsg('Call ended','sys');
   toast('Call complete — log it and move on');
@@ -411,6 +415,36 @@ function bump(id){$(id).textContent=parseInt($(id).textContent)+1; try{updateMis
 $('startBtn').onclick=()=>{ if(started)return; started=true; $('startBtn').disabled=true; runCall(); };
 $('muteBtn').onclick=()=>{ muted=!muted; $('muteBtn').textContent=muted?'🔇 Voice off':'🔊 Voice on';
   if(muted){ if('speechSynthesis'in window)speechSynthesis.cancel(); if(curAudio){try{curAudio.pause()}catch(e){}} } };
+
+/* ===== End / reset — stop everything and allow a fresh run ===== */
+function stopAudio(){ if('speechSynthesis'in window){try{speechSynthesis.cancel()}catch(e){}} if(curAudio){try{curAudio.pause()}catch(e){}} }
+function resetDemo(){
+  runToken++; stopAudio(); consentResolve=null;
+  if(typeof micOn!=='undefined' && micOn){ micOn=false; try{recog&&recog.stop()}catch(e){} var mb=$('micBtn'); if(mb){mb.classList.remove('on'); mb.textContent='🎤';} }
+  $('status').className='pill idle'; $('status').innerHTML='● idle';
+  started=false; $('startBtn').disabled=false;
+  var cb=$('callBtn'); cb.className='btn call'; cb.textContent='📞 Call'; cb.disabled=true;
+  $('transcript').innerHTML='<span class="muted">—</span>';
+  $('chips').innerHTML='<span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span>';
+  $('flagAlert').innerHTML='';
+  var bl={'b-budget':'💰 Budget','b-auth':'👤 Authority','b-need':'🎯 Need','b-time':'⏱️ Timeline'};
+  Object.keys(bl).forEach(function(id){ $(id).className='bcell'; $(id).querySelector('.v').textContent='—'; });
+  setCloser('Clarify','listening…');
+  $('objBox').innerHTML='';
+  $('notes').innerHTML='<span class="muted" style="font-size:.76rem">…</span>';
+  document.querySelectorAll('.opt').forEach(function(o){o.classList.remove('sel')});
+  $('bookStatus').className='cstatus'; $('bookStatus').textContent='Pick a time to send the invite.';
+  document.querySelectorAll('.slot').forEach(function(x){x.classList.remove('sel')});
+  $('payStatus').className='cstatus'; $('payStatus').textContent='No link sent yet.'; $('payBtn').disabled=false;
+  try{ setBkMode('closed'); }catch(e){}
+  phCall(null); $('phMsgs').innerHTML='<div class="ph-empty">Nothing yet — start a call.</div>';
+  $('s-dials').textContent='22'; $('s-conn').textContent='7'; $('s-book').textContent='2';
+  ['goalDials','goalConn','goalBook'].forEach(function(id){$(id).classList.remove('done')});
+  try{ updateMission(); }catch(e){}
+  convo=[];
+  toast('Demo reset — ready to start again');
+}
+$('callBtn').onclick=resetDemo;
 document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');});
 $('nextBtn').onclick=()=>{ if(document.querySelector('.opt.sel[data-o="booked"]'))bump('s-book'); toast('Logged ✓ — advancing to next prospect'); };
 
@@ -585,7 +619,7 @@ function phCall(html,cls){ const c=$('phCall'); if(!c)return;
   else { c.className='ph-call'+(cls?(' '+cls):''); c.innerHTML=html; } }
 
 /* ===== Update detection: poll version.json, prompt to reload on a new build ===== */
-const APP_VERSION='1.0.7';
+const APP_VERSION='1.0.8';
 function showUpdateBar(v){
   if(document.getElementById('updbar'))return;
   const b=document.createElement('div'); b.id='updbar';
