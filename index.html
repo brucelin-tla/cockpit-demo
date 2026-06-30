@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Cockpit — Live Co-pilot Prototype</title>
+<style>
+:root{
+  --bg:#0a0e17;--bg2:#111827;--bg3:#1a2236;--surface:#1f2937;--surface2:#273349;
+  --border:#2d3a50;--text:#e8ecf2;--text2:#9ca3b4;--muted:#6b7280;
+  --accent:#10b981;--accent2:#059669;--gold:#f59e0b;--red:#ef4444;--blue:#3b82f6;
+  --radius:12px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:16px}
+.wrap{max-width:1080px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:9px}
+.brand h1{font-size:1.05rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stats{display:flex;gap:6px}
+.stat{text-align:center;padding:4px 11px;background:var(--surface);border-radius:var(--radius-sm)}
+.stat b{font-size:1.05rem;display:block;line-height:1.1}.stat span{font-size:.62rem;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.cockpit{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:start}
+@media(max-width:760px){.cockpit{grid-template-columns:1fr}}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:.82rem}.qhead .m{color:var(--text2);font-size:.72rem}
+.qcard{display:flex;gap:9px;align-items:center;padding:9px 11px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);margin-bottom:7px}
+.qcard.active{background:var(--surface2);border-color:var(--accent)}
+.qrank{font-size:.72rem;font-weight:800;color:var(--text2);min-width:13px}
+.qbody{flex:1;min-width:0}.qname{font-weight:700;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qreason{font-size:.72rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qcard.active .qreason{color:var(--accent)}
+.qscore{font-weight:800;font-size:.95rem}.qscore.hi{color:var(--accent)}.qscore.mid{color:var(--gold)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:12px}
+.pd-head{display:flex;align-items:center;gap:11px;margin-bottom:0}
+.avatar{width:40px;height:40px;border-radius:50%;background:rgba(16,185,129,.16);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700}
+.pd-head .nm{font-size:1.05rem;font-weight:700}.pd-head .sub{font-size:.78rem;color:var(--text2)}
+.pill{font-size:.7rem;font-weight:700;padding:3px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:5px}
+.pill.idle{background:rgba(156,163,180,.15);color:var(--text2)}
+.pill.live{background:rgba(16,185,129,.15);color:var(--accent)}
+.btn{padding:9px 15px;border:none;border-radius:var(--radius-sm);font-size:.85rem;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(1.12)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.call{background:var(--accent);color:#fff}.btn.end{background:var(--red);color:#fff}
+.btn.primary{background:var(--blue);color:#fff}.btn.ghost{background:transparent;border:1px solid var(--border)}
+.lbl{font-size:.66rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;min-height:26px}
+.chip{font-size:.72rem;font-weight:600;padding:4px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;animation:pop .25s ease-out}
+.chip.pos{background:rgba(16,185,129,.15);color:#7ff0c8}
+.chip.soft{background:rgba(245,158,11,.15);color:#ffd58a}
+.chip.hard{background:rgba(239,68,68,.15);color:#ffb1b1}
+.chip.consent{background:rgba(239,68,68,.18);color:#ffb1b1;cursor:pointer;border-color:var(--red)}
+.chip.consent.done{background:rgba(16,185,129,.15);color:#7ff0c8;border-color:transparent;cursor:default}
+.chip .new{color:var(--accent);font-weight:800}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.bant{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.bcell{padding:8px 9px;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);transition:.3s}
+.bcell .k{font-size:.72rem;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:4px}
+.bcell .v{font-size:.72rem;color:var(--text2);margin-top:3px;min-height:15px}
+.bcell.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.5)}.bcell.ok .k,.bcell.ok .v{color:#7ff0c8}
+.bcell.warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.5)}.bcell.warn .k,.bcell.warn .v{color:#ffd58a}
+.closer{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--accent);background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px}
+.closer .stage{font-weight:800}
+.obj{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);border-radius:var(--radius-sm);padding:10px 12px;margin-top:10px}
+.obj .h{font-size:.74rem;font-weight:700;color:#ffd58a;display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.obj .r{background:var(--surface);border-radius:var(--radius-sm);padding:7px 10px;margin-bottom:6px}
+.obj .r .t{font-size:.6rem;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin-bottom:2px;font-weight:700}
+.obj .r .x{font-size:.8rem}
+.notes{font-size:.8rem;color:var(--text2);line-height:1.7;min-height:18px}
+.notes .n{animation:pop .25s}
+.disp{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.opt{padding:6px 12px;font-size:.78rem;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);cursor:pointer}
+.opt.sel{background:rgba(16,185,129,.15);border-color:var(--accent);color:#7ff0c8}
+.transcript{background:#06090f;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:.78rem;max-height:120px;overflow:auto;margin-top:4px}
+.tline{margin-bottom:4px}.tline .who{font-weight:700;color:var(--text2)}.tline.them .who{color:var(--accent)}.tline.you .who{color:var(--blue)}
+.hint{font-size:.74rem;color:var(--muted);text-align:center;margin-top:10px}
+.controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+.flag-alert{display:flex;align-items:flex-start;gap:8px;padding:8px 11px;background:rgba(245,158,11,.12);border-radius:var(--radius-sm);margin-top:9px;font-size:.76rem;color:#ffd58a;line-height:1.45}
+.muted{color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand"><span style="font-size:1.3rem">📞</span><h1>Sales Cockpit</h1>
+      <span id="status" class="pill idle">● idle</span></div>
+    <div class="stats">
+      <div class="stat"><b id="s-dials">22</b><span>dials</span></div>
+      <div class="stat"><b id="s-conn" style="color:var(--accent)">7</b><span>connects</span></div>
+      <div class="stat"><b id="s-book" style="color:var(--accent)">2</b><span>booked</span></div>
+      <div class="stat"><b id="s-queue">41</b><span>queue</span></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button id="startBtn" class="btn call">▶ Start call &nbsp;<span class="muted" style="font-weight:600">(AI plays the prospect)</span></button>
+    <button id="muteBtn" class="btn ghost">🔊 Voice on</button>
+    <span class="muted" style="font-size:.78rem">Demo: a synthetic prospect talks; the cockpit reacts live — nothing is really dialed.</span>
+  </div>
+
+  <div class="cockpit">
+    <div>
+      <div class="qhead"><b>Queue</b><span class="m">AI-ranked</span></div>
+      <div class="qcard active"><span class="qrank">1</span><div class="qbody"><div class="qname">Marcus Webb</div><div class="qreason">Callback promised today</div></div><span class="qscore hi">94</span></div>
+      <div class="qcard"><span class="qrank">2</span><div class="qbody"><div class="qname">Dana Liu</div><div class="qreason">Opened proposal 2×</div></div><span class="qscore mid">88</span></div>
+      <div class="qcard"><span class="qrank">3</span><div class="qbody"><div class="qname">Reggie Park</div><div class="qreason">Quote expires Fri</div></div><span class="qscore mid">81</span></div>
+      <div style="text-align:center;font-size:.74rem;color:var(--text2);padding:5px">+ 38 more</div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="pd-head">
+          <div class="avatar">MW</div>
+          <div style="flex:1"><div class="nm">Marcus Webb</div><div class="sub">Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida</div></div>
+          <button id="callBtn" class="btn call" disabled>📞 Call</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="lbl">🏷️ Live signals &amp; flags <span class="muted" style="text-transform:none;letter-spacing:0">· stick to the profile · consent shows here too</span></div>
+        <div id="chips" class="chips"><span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span></div>
+        <div id="flagAlert"></div>
+      </div>
+
+      <div class="panel">
+        <div class="lbl">✅ Prequalify · BANT <span class="muted" style="text-transform:none;letter-spacing:0">· auto-fills from the call · tap to edit</span></div>
+        <div class="bant">
+          <div class="bcell" id="b-budget"><div class="k">💰 Budget</div><div class="v">—</div></div>
+          <div class="bcell" id="b-auth"><div class="k">👤 Authority</div><div class="v">—</div></div>
+          <div class="bcell" id="b-need"><div class="k">🎯 Need</div><div class="v">—</div></div>
+          <div class="bcell" id="b-time"><div class="k">⏱️ Timeline</div><div class="v">—</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="closer"><span>🤖 CLOSER ·</span><span>now on</span><span id="closer-stage" class="stage">Clarify</span><span class="muted" id="closer-hint" style="margin-left:auto">listening…</span></div>
+        <div id="objBox"></div>
+      </div>
+
+      <div class="panel">
+        <div class="lbl">📝 Live notes <span class="muted" style="text-transform:none;letter-spacing:0">· auto-captured</span></div>
+        <div id="notes" class="notes"><span class="muted" style="font-size:.76rem">…</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="lbl">Outcome</div>
+        <div class="disp" id="disp">
+          <div class="opt" data-o="booked">📅 Booked</div>
+          <div class="opt" data-o="callback">🔁 Callback</div>
+          <div class="opt" data-o="connected">✅ Connected</div>
+          <div class="opt" data-o="nq">🚫 Not qualified ▾</div>
+          <button id="nextBtn" class="btn primary" style="margin-left:auto">Log and next →</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="lbl">🎙️ Live transcript <span class="muted" style="text-transform:none;letter-spacing:0">· what the AI is hearing</span></div>
+        <div id="transcript" class="transcript"><span class="muted">—</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI.</div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let muted=false, voice=null, started=false;
+
+/* pick a voice for the AI prospect */
+function pickVoice(){
+  const vs=speechSynthesis.getVoices();
+  voice=vs.find(v=>/en-US/i.test(v.lang)&&/male|david|mark|guy/i.test(v.name))||vs.find(v=>/en/i.test(v.lang))||vs[0];
+}
+if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged=pickVoice; pickVoice(); }
+
+function speak(text){
+  return new Promise(res=>{
+    if(muted||!('speechSynthesis' in window)){ return setTimeout(res, Math.min(4200, 700+text.length*42)); }
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=1; u.pitch=.9; if(voice) u.voice=voice;
+    const to=setTimeout(res, 9000);
+    u.onend=()=>{clearTimeout(to);res()}; u.onerror=()=>{clearTimeout(to);res()};
+    speechSynthesis.speak(u);
+  });
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1900);}
+
+function addTranscript(who,txt){
+  const t=$('transcript'); if(t.querySelector('.muted')) t.innerHTML='';
+  const d=document.createElement('div'); d.className='tline '+(who==='Marcus'?'them':'you');
+  d.innerHTML='<span class="who">'+who+':</span> '+txt; t.appendChild(d); t.scrollTop=t.scrollHeight;
+}
+function setBant(cell,val,cls){const el=$(cell);el.className='bcell '+cls;el.querySelector('.v').textContent=val;}
+function setCloser(stage,hint){$('closer-stage').textContent=stage; if(hint)$('closer-hint').textContent=hint;}
+function addNote(txt){const n=$('notes'); if(n.querySelector('.muted'))n.innerHTML=''; const d=document.createElement('div');d.className='n';d.textContent='• '+txt;n.appendChild(d);}
+function addChip(label,cls,isNew){
+  const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
+  const s=document.createElement('span'); s.className='chip '+cls;
+  s.innerHTML=(cls==='pos'?'✓ ':'⚑ ')+label+(isNew?' <span class="new">· just now</span>':'');
+  c.appendChild(s);
+  if(isNew) setTimeout(()=>{const nw=s.querySelector('.new'); if(nw)nw.remove();},2600);
+}
+function flagAlert(tag,quote){
+  $('flagAlert').innerHTML='<div class="flag-alert">⚑ <div><b>Signal — '+tag+'.</b> Heard: “'+quote+'.” Added to profile (soft flag). <span style="color:#ffd58a;cursor:pointer">undo</span></div></div>';
+}
+function showObjection(){
+  $('objBox').innerHTML=
+   '<div class="obj"><div class="h">⚠ Objection heard — “I need to talk to my partner first”</div>'+
+   '<div class="r"><div class="t">1 · Agree</div><div class="x">“Totally — a call like this should include your partner, I’d want the same.”</div></div>'+
+   '<div class="r"><div class="t">2 · Reframe with a story</div><div class="x">“Most owners say that. Dana at Liu Freight did exactly this — we got her partner on a 10-minute call, both saw the numbers, signed that week. Want me to set that up?”</div></div></div>';
+}
+
+/* consent gate — folded into the chip row */
+let consentResolve; const consentDone=new Promise(r=>consentResolve=r);
+function showConsentChip(){
+  const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
+  const s=document.createElement('span'); s.className='chip consent'; s.id='consentChip';
+  s.innerHTML='🔴 FL — tap: read disclosure';
+  s.onclick=()=>{ s.className='chip consent done'; s.innerHTML='✓ FL · disclosure read'; s.onclick=null; consentResolve(); };
+  c.appendChild(s);
+}
+
+/* the scripted call */
+const script=[
+  {who:'Marcus',say:"Hey, yeah — you said you'd call me back today.",closer:['Clarify','got it — clarify why he\'s here']},
+  {who:'You',text:"I did, appreciate you picking up. Quick one — how's business right now?"},
+  {who:'Marcus',say:"Three trucks, trying to grow, but honestly I worry about protecting what I've built.",
+    bant:['b-need','Growth + protect','ok'], chip:['High intent','pos',false], closer:['Label','label the problem']},
+  {who:'You',text:"That gap is exactly what this closes — growth and downside protection in one."},
+  {who:'Marcus',say:"Okay. What's it run me?"},
+  {who:'You',text:"Five hundred to set up, then three hundred a month."},
+  {who:'Marcus',say:"Yeah, I can swing that, that's fine.", bant:['b-budget','$500 + $300 ok','ok'], note:"Comfortable with $500 setup + $300/mo", closer:['Overview','overview past pain']},
+  {who:'Marcus',say:"I'll tell you though, the whole industry feels rigged against small guys like me.",
+    chip:['Blamer / victim','soft',true], flag:['Blamer / victim',"the whole industry feels rigged against small guys like me"], closer:['Sell','sell the outcome']},
+  {who:'You',text:"I hear you — and that's the point, this puts the leverage back on your side."},
+  {who:'Marcus',say:"I'd want to run it past my business partner first, though.",
+    bant:['b-auth','+ partner?','warn'], obj:true, note:"Decision-maker with a business partner — needs alignment", closer:['Explain','handle the partner concern']},
+  {who:'You',text:"[Agree → reframe with the Dana story]"},
+  {who:'Marcus',say:"You know what — yeah, set up a call with both of us this week.",
+    bant:['b-time','This month','ok'], outcome:'booked', closer:['Reinforce','reinforce the decision']},
+  {who:'You',text:"Done. I'll send a couple times for you and your partner this week."}
+];
+
+async function applyEffects(s){
+  if(s.bant) setBant(s.bant[0],s.bant[1],s.bant[2]);
+  if(s.chip) addChip(s.chip[0],s.chip[1],s.chip[2]);
+  if(s.flag) flagAlert(s.flag[0],s.flag[1]);
+  if(s.note) addNote(s.note);
+  if(s.obj) showObjection();
+  if(s.closer) setCloser(s.closer[0],s.closer[1]);
+  if(s.outcome){ document.querySelectorAll('.opt').forEach(o=>{if(o.dataset.o===s.outcome)o.classList.add('sel');}); toast('Co-pilot suggests: Booked'); }
+}
+
+async function runCall(){
+  $('status').className='pill live'; $('status').innerHTML='● connecting…';
+  $('callBtn').className='btn end'; $('callBtn').innerHTML='⛔ End'; $('callBtn').disabled=false;
+  await wait(900);
+  $('status').innerHTML='● connected';
+  bump('s-dials'); bump('s-conn');
+  showConsentChip();
+  toast('Florida = all-party consent — tap the chip to start');
+  await consentDone;
+  $('status').innerHTML='🎙️ listening';
+  setCloser('Clarify','listening…');
+  await wait(500);
+  for(const s of script){
+    if(s.who==='Marcus'){ addTranscript('Marcus',s.say); await applyEffects(s); await speak(s.say); await wait(350); }
+    else { addTranscript('You',s.text); await applyEffects(s); await wait(1100); }
+  }
+  $('closer-hint').textContent='ready to close';
+  toast('Call complete — log it and move on');
+}
+function bump(id){$(id).textContent=parseInt($(id).textContent)+1;}
+
+$('startBtn').onclick=()=>{ if(started)return; started=true; $('startBtn').disabled=true; runCall(); };
+$('muteBtn').onclick=()=>{ muted=!muted; $('muteBtn').textContent=muted?'🔇 Voice off':'🔊 Voice on'; if(muted&&'speechSynthesis'in window)speechSynthesis.cancel(); };
+document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');});
+$('nextBtn').onclick=()=>{ if($('#disp .opt.sel')||document.querySelector('.opt.sel')){ if(document.querySelector('.opt.sel[data-o="booked"]'))bump('s-book'); } toast('Logged ✓ — advancing to next prospect'); };
+</script>
+</body>
+</html>
