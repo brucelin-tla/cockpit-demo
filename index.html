@@ -91,6 +91,18 @@ body{padding-bottom:104px}
 #chatbar .kb{padding:14px 15px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--text);cursor:pointer;font-size:1.05rem}
 #chatbar .kb:hover{border-color:var(--accent)}
 @media(max-width:600px){#chatbar #sendBtn{padding:14px 16px}}
+.close-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.close-grid{grid-template-columns:1fr}}
+.close-col{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px}
+.ct{font-size:.82rem;font-weight:700;margin-bottom:8px}
+.slots{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.slot{padding:7px 11px;font-size:.78rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.slot.sel{background:rgba(16,185,129,.18);border-color:var(--accent);color:#7ff0c8}
+.paybtn{width:100%;padding:10px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer;margin-bottom:8px}
+.paybtn:disabled{opacity:.6;cursor:not-allowed}
+.cstatus{font-size:.76rem;color:var(--text2)}
+.cstatus.ok{color:#7ff0c8;font-weight:600}
+.offer{font-size:.74rem;color:var(--text2);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -168,6 +180,28 @@ body{padding-bottom:104px}
         </div>
       </div>
 
+      <div class="panel" id="closePanel">
+        <div class="lbl">🤝 Close the deal <span class="muted" style="text-transform:none;letter-spacing:0">· lock it in before you hang up</span></div>
+        <div class="close-grid">
+          <div class="close-col">
+            <div class="ct">📅 Book the appointment</div>
+            <div class="offer">Auto-invites Renee <b>+ her partner</b> (from BANT).</div>
+            <div class="slots" id="slots">
+              <button class="slot">Thu 2:00pm</button>
+              <button class="slot">Thu 4:30pm</button>
+              <button class="slot">Fri 11:00am</button>
+            </div>
+            <div id="bookStatus" class="cstatus">Pick a time to send the invite.</div>
+          </div>
+          <div class="close-col">
+            <div class="ct">💳 Collect payment</div>
+            <div class="offer">EPIC LIFE membership · <b>$500 setup + $300/mo</b></div>
+            <button id="payBtn" class="paybtn">Send payment link via SMS</button>
+            <div id="payStatus" class="cstatus">No link sent yet.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="lbl">🎙️ Live transcript <span class="muted" style="text-transform:none;letter-spacing:0">· what the AI is hearing</span></div>
         <div id="transcript" class="transcript"><span class="muted">—</span></div>
@@ -175,7 +209,7 @@ body{padding-bottom:104px}
 
     </div>
   </div>
-  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.2</span></div>
+  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.3</span></div>
 </div>
 
 <div id="chatbar">
@@ -385,8 +419,24 @@ $('chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDef
 setAiStatus();
 setTimeout(()=>{ try{ $('chatInput').focus({preventScroll:true}); }catch(e){} },300);
 
+/* ===== Close the deal: book + charge (simulated) ===== */
+function setPay(t,cls){ $('payStatus').className='cstatus '+(cls||''); $('payStatus').innerHTML=t; }
+document.querySelectorAll('.slot').forEach(s=>s.onclick=()=>{
+  document.querySelectorAll('.slot').forEach(x=>x.classList.remove('sel')); s.classList.add('sel');
+  $('bookStatus').className='cstatus ok';
+  $('bookStatus').innerHTML='✅ Invite sent to Renee + her partner for <b>'+s.textContent+'</b>';
+  toast('Booked — '+s.textContent);
+});
+$('payBtn').onclick=async()=>{
+  $('payBtn').disabled=true;
+  setPay('📲 Link sent to Renee’s phone…','');
+  await wait(1600); setPay('👀 Renee opened the payment page…','');
+  await wait(2000); setPay('✅ Paid — $500 setup today, $300/mo started','ok');
+  toast('Payment received 🎉'); bump('s-book');
+};
+
 /* ===== Update detection: poll version.json, prompt to reload on a new build ===== */
-const APP_VERSION='1.0.2';
+const APP_VERSION='1.0.3';
 function showUpdateBar(v){
   if(document.getElementById('updbar'))return;
   const b=document.createElement('div'); b.id='updbar';
