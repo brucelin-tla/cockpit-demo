@@ -1,5 +1,6 @@
 # Cockpit demo — changelog (newest first)
 
+- **1.0.9** - Renamed the tool to **EPIC Closer** (was Sales Cockpit); landing menu + all builds updated.
 - **1.0.8** — Wired the End button = stop everything + full reset, so the demo restarts cleanly.
 - **1.0.7** — Mic input (Web Speech API): talk to Renee, it transcribes live and the AI reacts.
 - **1.0.6** — Booking is a "3B call" with two outcome paths (closed → onboarding, not closed → 3B + closer); auto-defaults from payment.

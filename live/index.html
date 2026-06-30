@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sales Cockpit — Live Co-pilot Prototype</title>
+<title>EPIC Closer — Live Co-pilot Prototype</title>
 <style>
 :root{
   --bg:#0a0e17;--bg2:#111827;--bg3:#1a2236;--surface:#1f2937;--surface2:#273349;
@@ -139,7 +139,7 @@ body{padding-bottom:104px}
 <div class="wrap">
 
   <header>
-    <div class="brand"><span style="font-size:1.3rem">📞</span><h1>Sales Cockpit</h1>
+    <div class="brand"><span style="font-size:1.3rem">📞</span><h1>EPIC Closer</h1>
       <span id="status" class="pill idle">● idle</span></div>
     <div class="stats">
       <div class="stat"><b id="s-dials">22</b><span>dials</span></div>
@@ -161,7 +161,7 @@ body{padding-bottom:104px}
   <div class="controls">
     <button id="startBtn" class="btn call">▶ Start call &nbsp;<span class="muted" style="font-weight:600">(AI plays the prospect)</span></button>
     <button id="muteBtn" class="btn ghost">🔊 Voice on</button>
-    <span class="muted" style="font-size:.78rem">Demo: a synthetic prospect talks; the cockpit reacts live — nothing is really dialed.</span>
+    <span class="muted" style="font-size:.78rem">Demo: a synthetic prospect talks; EPIC Closer reacts live — nothing is really dialed.</span>
   </div>
 
   <div class="cockpit">
@@ -266,7 +266,7 @@ body{padding-bottom:104px}
       </div></div>
     </div>
   </div>
-  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.8</span></div>
+  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.9</span></div>
 </div>
 
 <div id="chatbar">
@@ -391,7 +391,7 @@ async function runCall(){
   await wait(900); if(myToken!==runToken) return;
   $('status').innerHTML='● connected';
   phCall('📞 On call · (305) 555-0142');
-  if($('tzStatus').classList.contains('qbad')) toast('⛔ Quiet hours in FL — real cockpit blocks this; demo override');
+  if($('tzStatus').classList.contains('qbad')) toast('⛔ Quiet hours in FL — the real tool blocks this; demo override');
   bump('s-dials'); bump('s-conn');
   showConsentChip();
   toast('Florida = all-party consent — tap the chip to start');
@@ -453,7 +453,7 @@ function esc(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;
 function getKey(){return localStorage.getItem('anthropic_key')||'';}
 function setAiStatus(){ const k=getKey();
   $('aiStatus').innerHTML = k
-    ? '🟢 AI prospect connected — type, or tap 🎤 to TALK, and Renee answers in character while the cockpit updates live.'
+    ? '🟢 AI prospect connected — type, or tap 🎤 to TALK, and Renee answers in character while EPIC Closer updates live.'
     : '⚪ Not connected. Click “Connect AI prospect” and paste your Anthropic API key (kept only in this browser). The scripted ▶ Start call works without it.';
 }
 $('keyBtn').onclick=()=>{ const cur=getKey();
@@ -619,7 +619,7 @@ function phCall(html,cls){ const c=$('phCall'); if(!c)return;
   else { c.className='ph-call'+(cls?(' '+cls):''); c.innerHTML=html; } }
 
 /* ===== Update detection: poll version.json, prompt to reload on a new build ===== */
-const APP_VERSION='1.0.8';
+const APP_VERSION='1.0.9';
 function showUpdateBar(v){
   if(document.getElementById('updbar'))return;
   const b=document.createElement('div'); b.id='updbar';
