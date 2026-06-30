@@ -103,6 +103,17 @@ body{padding-bottom:104px}
 .cstatus{font-size:.76rem;color:var(--text2)}
 .cstatus.ok{color:#7ff0c8;font-weight:600}
 .offer{font-size:.74rem;color:var(--text2);margin-bottom:8px}
+.mission{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;margin-bottom:14px}
+.mhead{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;font-weight:700;margin-bottom:9px}
+.streak{font-size:.76rem;color:var(--gold);font-weight:700}
+.goals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:600px){.goals{grid-template-columns:1fr}}
+.goal .glabel{font-size:.74rem;color:var(--text2);margin-bottom:5px;display:flex;justify-content:space-between}
+.goal.done .glabel{color:#7ff0c8}
+.bar{height:7px;background:var(--bg2);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+.callinfo{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--text2);margin-top:9px;border-top:1px solid var(--border);padding-top:9px}
+.qok{color:var(--accent);font-weight:600}.qmid{color:var(--gold);font-weight:600}.qbad{color:var(--red);font-weight:600}
 </style>
 </head>
 <body>
@@ -118,6 +129,15 @@ body{padding-bottom:104px}
       <div class="stat"><b id="s-queue">41</b><span>queue</span></div>
     </div>
   </header>
+
+  <div class="mission">
+    <div class="mhead"><span>🎯 Today's mission</span><span class="streak">🔥 4-day streak · 1,840 pts</span></div>
+    <div class="goals">
+      <div class="goal" id="goalDials"><div class="glabel"><span>Dials</span><span id="gd">0/40</span></div><div class="bar"><i id="bd"></i></div></div>
+      <div class="goal" id="goalConn"><div class="glabel"><span>Connects</span><span id="gc">0/10</span></div><div class="bar"><i id="bc"></i></div></div>
+      <div class="goal" id="goalBook"><div class="glabel"><span>Booked</span><span id="gb">0/3</span></div><div class="bar"><i id="bb"></i></div></div>
+    </div>
+  </div>
 
   <div class="controls">
     <button id="startBtn" class="btn call">▶ Start call &nbsp;<span class="muted" style="font-weight:600">(AI plays the prospect)</span></button>
@@ -140,6 +160,11 @@ body{padding-bottom:104px}
           <div class="avatar">RW</div>
           <div style="flex:1"><div class="nm">Renee Webb</div><div class="sub">Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida</div></div>
           <button id="callBtn" class="btn call" disabled>📞 Call</button>
+        </div>
+        <div class="callinfo">
+          <span>📍 Florida · <span id="locTime">—</span> · <span id="tzStatus">—</span></span>
+          <span>📞 Caller ID <b>(305) 555-0142</b> · local presence ✓</span>
+          <span class="muted">🕒 Best window 9am–7pm ET</span>
         </div>
       </div>
 
@@ -209,7 +234,7 @@ body{padding-bottom:104px}
 
     </div>
   </div>
-  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.3</span></div>
+  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.4</span></div>
 </div>
 
 <div id="chatbar">
@@ -330,6 +355,7 @@ async function runCall(){
   $('callBtn').className='btn end'; $('callBtn').innerHTML='⛔ End'; $('callBtn').disabled=false;
   await wait(900);
   $('status').innerHTML='● connected';
+  if($('tzStatus').classList.contains('qbad')) toast('⛔ Quiet hours in FL — real cockpit blocks this; demo override');
   bump('s-dials'); bump('s-conn');
   showConsentChip();
   toast('Florida = all-party consent — tap the chip to start');
@@ -344,7 +370,7 @@ async function runCall(){
   $('closer-hint').textContent='ready to close';
   toast('Call complete — log it and move on');
 }
-function bump(id){$(id).textContent=parseInt($(id).textContent)+1;}
+function bump(id){$(id).textContent=parseInt($(id).textContent)+1; try{updateMission();}catch(e){}}
 
 $('startBtn').onclick=()=>{ if(started)return; started=true; $('startBtn').disabled=true; runCall(); };
 $('muteBtn').onclick=()=>{ muted=!muted; $('muteBtn').textContent=muted?'🔇 Voice off':'🔊 Voice on';
@@ -435,8 +461,35 @@ $('payBtn').onclick=async()=>{
   toast('Payment received 🎉'); bump('s-book');
 };
 
+/* ===== timezone / quiet-hours guard + caller-ID + daily mission ===== */
+function updateTiming(){
+  try{
+    const now=new Date();
+    const t=now.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'});
+    let hr=parseInt(now.toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}),10); if(hr===24)hr=0;
+    $('locTime').textContent=t+' ET';
+    let st,cls;
+    if(hr<8||hr>=21){ st='⛔ Quiet hours — don’t call'; cls='qbad'; }
+    else if(hr<9||hr>=19){ st='⚠️ Off-peak'; cls='qmid'; }
+    else { st='✅ Good time to call'; cls='qok'; }
+    const el=$('tzStatus'); el.textContent=st; el.className=cls;
+  }catch(e){}
+}
+const GOAL={dials:40,conn:10,book:3};
+function gset(v,bar,goalEl,val,goal){
+  $(v).textContent=val+'/'+goal;
+  $(bar).style.width=Math.min(100,Math.round(val/goal*100))+'%';
+  const g=$(goalEl); if(g&&val>=goal&&!g.classList.contains('done')){ g.classList.add('done'); toast('🎯 Mission goal hit!'); }
+}
+function updateMission(){
+  gset('gd','bd','goalDials',parseInt($('s-dials').textContent,10),GOAL.dials);
+  gset('gc','bc','goalConn',parseInt($('s-conn').textContent,10),GOAL.conn);
+  gset('gb','bb','goalBook',parseInt($('s-book').textContent,10),GOAL.book);
+}
+updateTiming(); setInterval(updateTiming,30000); updateMission();
+
 /* ===== Update detection: poll version.json, prompt to reload on a new build ===== */
-const APP_VERSION='1.0.3';
+const APP_VERSION='1.0.4';
 function showUpdateBar(v){
   if(document.getElementById('updbar'))return;
   const b=document.createElement('div'); b.id='updbar';
