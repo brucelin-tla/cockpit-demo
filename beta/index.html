@@ -133,6 +133,43 @@ body{padding-bottom:104px}
 .bk-modes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .bkmode{padding:6px 9px;font-size:.7rem;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer}
 .bkmode.sel{background:rgba(16,185,129,.16);border-color:var(--accent);color:#7ff0c8}
+/* ===== SAY THIS hero band — the loudest thing on screen during a call ===== */
+.hero{border:1.5px solid var(--accent);background:linear-gradient(180deg,rgba(16,185,129,.07),var(--surface))}
+.hero-top{display:flex;align-items:center;gap:8px;font-size:.74rem;margin-bottom:9px}
+.closer-badge{color:var(--accent);font-weight:800;letter-spacing:.2px}
+.closer-badge .stage{font-weight:800}
+.say{font-size:1.06rem;line-height:1.5;font-weight:600;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 15px;min-height:26px;transition:.2s}
+.say.cue{border-color:rgba(59,130,246,.6);box-shadow:0 0 0 1px rgba(59,130,246,.25)}
+.say .qmark{color:var(--blue);font-weight:800;margin-right:6px}
+.obj{margin-top:11px}
+/* keyboard hints on disposition + Log&Next */
+kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text2);line-height:1}
+.opt{display:inline-flex;align-items:center;gap:7px}
+.opt.sel kbd{color:#7ff0c8;border-color:var(--accent)}
+.btn.primary kbd{background:rgba(255,255,255,.22);border-color:transparent;color:#fff;margin-left:7px}
+.actionbar{border-color:rgba(59,130,246,.4)}
+/* not-qualified reason chips (pre-filled from heard signals) */
+.nq-reasons{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+.rz{padding:6px 11px;font-size:.76rem;border-radius:999px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.rz:hover{border-color:var(--red)}
+.rz.pre{border-style:dashed;border-color:rgba(245,158,11,.6);color:#ffd58a}
+.rz.sel{background:rgba(239,68,68,.18);border-color:var(--red);color:#ffb1b1}
+.hidden{display:none}
+/* ===== What's new / changelog ===== */
+#ver{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+.cl-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.cl-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:520px;width:100%;max-height:82vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.cl-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.cl-head b{font-size:.98rem}
+.cl-x{cursor:pointer;color:var(--text2);font-size:1.1rem;padding:2px 6px}
+.cl-x:hover{color:var(--text)}
+.cl-body{padding:4px 16px 14px}
+.cl-entry{padding:13px 0;border-bottom:1px solid var(--border)}
+.cl-entry:last-child{border-bottom:none}
+.cl-v{font-weight:800;color:var(--accent)}
+.cl-d{font-size:.72rem;color:var(--muted);margin-left:8px}
+.cl-entry ul{margin:8px 0 0;padding-left:18px}
+.cl-entry li{font-size:.82rem;color:var(--text2);margin-bottom:6px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -176,8 +213,8 @@ body{padding-bottom:104px}
     <div>
       <div class="panel">
         <div class="pd-head">
-          <div class="avatar">RW</div>
-          <div style="flex:1"><div class="nm">Renee Webb</div><div class="sub">Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida</div></div>
+          <div class="avatar" id="pAvatar">RW</div>
+          <div style="flex:1"><div class="nm" id="pName">Renee Webb</div><div class="sub" id="pSub">Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida</div></div>
           <button id="callBtn" class="btn call" disabled>📞 Call</button>
         </div>
         <div class="callinfo">
@@ -187,15 +224,22 @@ body{padding-bottom:104px}
         </div>
       </div>
 
-      <div class="panel">
-        <div class="lbl">🏷️ Live signals &amp; flags <span class="muted" style="text-transform:none;letter-spacing:0">· stick to the profile · consent shows here too</span></div>
-        <div id="chips" class="chips"><span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span></div>
-        <div id="flagAlert"></div>
+      <!-- SAY THIS — the loudest surface: what to say now + objection rebuttal -->
+      <div class="panel hero">
+        <div class="hero-top">
+          <span class="closer-badge">🤖 CLOSER · <span id="closer-stage" class="stage">Clarify</span></span>
+          <span class="muted" id="closer-hint" style="margin-left:auto">listening…</span>
+        </div>
+        <div id="sayLine" class="say"><span class="muted" style="font-size:.82rem">Your suggested line appears here as the call moves — glance, say it, keep talking.</span></div>
+        <div id="objBox"></div>
       </div>
 
+      <!-- Qualify strip — signals + BANT in one always-visible band -->
       <div class="panel">
-        <div class="lbl">✅ Prequalify · BANT <span class="muted" style="text-transform:none;letter-spacing:0">· auto-fills from the call · tap to edit</span></div>
-        <div class="bant">
+        <div class="lbl">🏷️ Signals &amp; flags · ✅ BANT <span class="muted" style="text-transform:none;letter-spacing:0">· live from the call · tap BANT to edit · consent shows here too</span></div>
+        <div id="chips" class="chips"><span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span></div>
+        <div id="flagAlert"></div>
+        <div class="bant" style="margin-top:9px">
           <div class="bcell" id="b-budget"><div class="k">💰 Budget</div><div class="v">—</div></div>
           <div class="bcell" id="b-auth"><div class="k">👤 Authority</div><div class="v">—</div></div>
           <div class="bcell" id="b-need"><div class="k">🎯 Need</div><div class="v">—</div></div>
@@ -204,24 +248,21 @@ body{padding-bottom:104px}
       </div>
 
       <div class="panel">
-        <div class="closer"><span>🤖 CLOSER ·</span><span>now on</span><span id="closer-stage" class="stage">Clarify</span><span class="muted" id="closer-hint" style="margin-left:auto">listening…</span></div>
-        <div id="objBox"></div>
-      </div>
-
-      <div class="panel">
         <div class="lbl">📝 Live notes <span class="muted" style="text-transform:none;letter-spacing:0">· auto-captured</span></div>
         <div id="notes" class="notes"><span class="muted" style="font-size:.76rem">…</span></div>
       </div>
 
-      <div class="panel">
-        <div class="lbl">Outcome</div>
+      <!-- End-of-call action bar — the sacred loop, keyboard-first -->
+      <div class="panel actionbar">
+        <div class="lbl">Outcome <span class="muted" style="text-transform:none;letter-spacing:0">· press 1–4 to pick, ↵ to log &amp; jump to the next prospect</span></div>
         <div class="disp" id="disp">
-          <div class="opt" data-o="booked">📅 Booked</div>
-          <div class="opt" data-o="callback">🔁 Callback</div>
-          <div class="opt" data-o="connected">✅ Connected</div>
-          <div class="opt" data-o="nq">🚫 Not qualified ▾</div>
-          <button id="nextBtn" class="btn primary" style="margin-left:auto">Log and next →</button>
+          <div class="opt" data-o="booked"><kbd>1</kbd> 📅 Booked</div>
+          <div class="opt" data-o="callback"><kbd>2</kbd> 🔁 Callback</div>
+          <div class="opt" data-o="connected"><kbd>3</kbd> ✅ Connected</div>
+          <div class="opt" data-o="nq"><kbd>4</kbd> 🚫 Not qualified ▾</div>
+          <button id="nextBtn" class="btn primary" style="margin-left:auto">Log &amp; Next<kbd>↵</kbd></button>
         </div>
+        <div id="nqReasons" class="nq-reasons hidden"></div>
       </div>
 
       <div class="panel" id="closePanel">
@@ -266,7 +307,7 @@ body{padding-bottom:104px}
       </div></div>
     </div>
   </div>
-  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.0.9</span></div>
+  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.1.0</span></div>
 </div>
 
 <div id="chatbar">
@@ -279,11 +320,49 @@ body{padding-bottom:104px}
   </div>
 </div>
 
+<div id="clModal" class="cl-modal hidden">
+  <div class="cl-box">
+    <div class="cl-head"><b>📋 What's new — EPIC Closer</b><span id="clClose" class="cl-x" title="close">✕</span></div>
+    <div id="clBody" class="cl-body"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
 const $=id=>document.getElementById(id);
+
+/* ===== Changelog — newest first. Bump this on every promote to live.
+   version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
+const PATCH_NOTES=[
+{v:'1.1.0',d:'2026-06-30',n:[
+ "Cockpit rebuilt around the live call so you can just talk and close. The screen now guides your eye instead of making you scroll.",
+ "New “SAY THIS” band up top — the AI's suggested line is always front-and-center, and objection rebuttals (Agree → Story) pop right there so you never hunt for them mid-call.",
+ "Signals and BANT are merged into one always-visible strip — qualification state at a glance, no scrolling.",
+ "Keyboard-first: press 1–4 to set the outcome, Enter to log and jump straight to the next prospect. Never touch the mouse between calls.",
+ "“Not qualified” now pre-fills the reason from the signals actually heard on the call (plus an affordability flag), so logging is one tap.",
+]},
+{v:'1.0.9',d:'2026-06-30',n:[
+ "Close the deal in-cockpit: book the 3B call (closed → onboarding, or not-closed → 3B + senior closer) and send the EPIC LIFE payment link, with live Sent → Opened → Paid status.",
+ "Talk to the AI prospect with your mic (Chrome/Edge) — a browser preview of the live-listen loop.",
+ "Prospect's-phone view, quiet-hours / best-time guard, local-presence caller ID, and a daily-mission streak.",
+]},
+];
+
+function renderChangelog(){
+  $('clBody').innerHTML = PATCH_NOTES.map(p=>
+    '<div class="cl-entry"><span class="cl-v">v'+p.v+'</span><span class="cl-d">'+p.d+'</span><ul>'+
+    p.n.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
+}
+function openChangelog(){ renderChangelog(); $('clModal').classList.remove('hidden'); }
+function closeChangelog(){ $('clModal').classList.add('hidden'); }
 let muted=false, voice=null, started=false, curAudio=null, runToken=0;
+let heardSignals=[], nqReason='', curProspect=0;
+const PROSPECTS=[
+  {ini:'RW',nm:'Renee Webb', sub:'Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida'},
+  {ini:'DL',nm:'Dana Liu',   sub:'Liu Freight · Owner · Opened proposal 2× · 📍 Texas'},
+  {ini:'RP',nm:'Reggie Park', sub:'Park &amp; Co · Owner · Quote expires Fri · 📍 Nevada'}
+];
 
 function pickVoice(){
   const vs=(window.speechSynthesis?speechSynthesis.getVoices():[])||[];
@@ -324,12 +403,20 @@ function addTranscript(who,txt){
 }
 function setBant(cell,val,cls){const el=$(cell);el.className='bcell '+cls;el.querySelector('.v').textContent=val;}
 function setCloser(stage,hint){$('closer-stage').textContent=stage; if(hint)$('closer-hint').textContent=hint;}
+/* SAY THIS hero — the line the rep should say now */
+function setSay(html,cue){ const el=$('sayLine'); el.className='say'+(cue?' cue':''); el.innerHTML=html; }
+function resetSay(){ $('sayLine').className='say'; $('sayLine').innerHTML='<span class="muted" style="font-size:.82rem">Your suggested line appears here as the call moves — glance, say it, keep talking.</span>'; }
+function setSayFromScript(text){
+  if(/^\s*\[/.test(text)) setSay('<span class="qmark">👉</span> Use the rebuttal below — agree, then tell the story.', true);
+  else setSay('<span class="qmark">“</span>'+esc(text)+'<span class="qmark">”</span>', true);
+}
 function addNote(txt){const n=$('notes'); if(n.querySelector('.muted'))n.innerHTML=''; const d=document.createElement('div');d.className='n';d.textContent='• '+txt;n.appendChild(d);}
 function addChip(label,cls,isNew){
   const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
   const s=document.createElement('span'); s.className='chip '+cls;
   s.innerHTML=(cls==='pos'?'✓ ':'⚑ ')+label+(isNew?' <span class="new">· just now</span>':'');
   c.appendChild(s);
+  if(cls!=='pos' && heardSignals.indexOf(label)<0) heardSignals.push(label);
   if(isNew) setTimeout(()=>{const nw=s.querySelector('.new'); if(nw)nw.remove();},2600);
 }
 function flagAlert(tag,quote){
@@ -400,10 +487,14 @@ async function runCall(){
   $('status').innerHTML='🎙️ listening';
   setCloser('Clarify','listening…');
   await wait(500); if(myToken!==runToken) return;
-  for(const s of script){
+  for(let i=0;i<script.length;i++){
+    const s=script[i];
     if(myToken!==runToken) return;
-    if(s.who==='Renee'){ addTranscript('Renee',s.say); await applyEffects(s); await play(s.aud,s.say); await wait(350); }
-    else { addTranscript('You',s.text); await applyEffects(s); await wait(1100); }
+    if(s.who==='Renee'){
+      addTranscript('Renee',s.say); await applyEffects(s);
+      for(let j=i+1;j<script.length;j++){ if(script[j].who==='You'){ setSayFromScript(script[j].text); break; } }
+      await play(s.aud,s.say); await wait(350);
+    } else { addTranscript('You',s.text); await applyEffects(s); await wait(1100); }
   }
   if(myToken!==runToken) return;
   $('closer-hint').textContent='ready to close';
@@ -418,7 +509,8 @@ $('muteBtn').onclick=()=>{ muted=!muted; $('muteBtn').textContent=muted?'🔇 Vo
 
 /* ===== End / reset — stop everything and allow a fresh run ===== */
 function stopAudio(){ if('speechSynthesis'in window){try{speechSynthesis.cancel()}catch(e){}} if(curAudio){try{curAudio.pause()}catch(e){}} }
-function resetDemo(){
+/* clear the live-call surfaces WITHOUT touching momentum stats or queue count */
+function clearCallUI(){
   runToken++; stopAudio(); consentResolve=null;
   if(typeof micOn!=='undefined' && micOn){ micOn=false; try{recog&&recog.stop()}catch(e){} var mb=$('micBtn'); if(mb){mb.classList.remove('on'); mb.textContent='🎤';} }
   $('status').className='pill idle'; $('status').innerHTML='● idle';
@@ -429,24 +521,74 @@ function resetDemo(){
   $('flagAlert').innerHTML='';
   var bl={'b-budget':'💰 Budget','b-auth':'👤 Authority','b-need':'🎯 Need','b-time':'⏱️ Timeline'};
   Object.keys(bl).forEach(function(id){ $(id).className='bcell'; $(id).querySelector('.v').textContent='—'; });
-  setCloser('Clarify','listening…');
+  setCloser('Clarify','listening…'); resetSay();
   $('objBox').innerHTML='';
   $('notes').innerHTML='<span class="muted" style="font-size:.76rem">…</span>';
   document.querySelectorAll('.opt').forEach(function(o){o.classList.remove('sel')});
+  $('nqReasons').className='nq-reasons hidden'; $('nqReasons').innerHTML='';
   $('bookStatus').className='cstatus'; $('bookStatus').textContent='Pick a time to send the invite.';
   document.querySelectorAll('.slot').forEach(function(x){x.classList.remove('sel')});
   $('payStatus').className='cstatus'; $('payStatus').textContent='No link sent yet.'; $('payBtn').disabled=false;
   try{ setBkMode('closed'); }catch(e){}
   phCall(null); $('phMsgs').innerHTML='<div class="ph-empty">Nothing yet — start a call.</div>';
-  $('s-dials').textContent='22'; $('s-conn').textContent='7'; $('s-book').textContent='2';
+  convo=[]; heardSignals=[]; nqReason='';
+}
+function setProspect(i){
+  curProspect=((i%PROSPECTS.length)+PROSPECTS.length)%PROSPECTS.length;
+  const p=PROSPECTS[curProspect];
+  $('pAvatar').textContent=p.ini; $('pName').textContent=p.nm; $('pSub').innerHTML=p.sub;
+  document.querySelectorAll('.qcard').forEach((c,idx)=>c.classList.toggle('active',idx===curProspect));
+}
+function resetDemo(){
+  clearCallUI(); setProspect(0);
+  $('s-dials').textContent='22'; $('s-conn').textContent='7'; $('s-book').textContent='2'; $('s-queue').textContent='41';
   ['goalDials','goalConn','goalBook'].forEach(function(id){$(id).classList.remove('done')});
   try{ updateMission(); }catch(e){}
-  convo=[];
   toast('Demo reset — ready to start again');
 }
 $('callBtn').onclick=resetDemo;
-document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');});
-$('nextBtn').onclick=()=>{ if(document.querySelector('.opt.sel[data-o="booked"]'))bump('s-book'); toast('Logged ✓ — advancing to next prospect'); };
+
+/* ===== Outcome selection + the sacred log→next loop ===== */
+function selectOutcome(o){
+  document.querySelectorAll('.opt').forEach(x=>x.classList.toggle('sel',x.dataset.o===o));
+  if(o==='nq') showNqReasons(); else { $('nqReasons').classList.add('hidden'); nqReason=''; }
+}
+document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>selectOutcome(o.dataset.o));
+/* disqualify reasons — pre-fill from the signals actually heard on this call */
+function showNqReasons(){
+  const box=$('nqReasons'); box.classList.remove('hidden');
+  const items=[], seen={};
+  heardSignals.forEach(l=>{ if(!seen[l]){seen[l]=1; items.push({l,pre:true});} });
+  if($('b-budget').classList.contains('warn')){ const l="Can't afford base ($500 + $300/mo)"; if(!seen[l]){seen[l]=1; items.push({l,pre:true});} }
+  ['Uncoachable / know-it-all','Integrity / cuts corners','Get-rich-quick','Not a fit'].forEach(l=>{ if(!seen[l]){seen[l]=1; items.push({l,pre:false});} });
+  box.innerHTML=items.map(it=>'<span class="rz'+(it.pre?' pre':'')+'" data-r="'+esc(it.l)+'">'+(it.pre?'• ':'')+esc(it.l)+'</span>').join('');
+  box.querySelectorAll('.rz').forEach(r=>r.onclick=()=>{ box.querySelectorAll('.rz').forEach(x=>x.classList.remove('sel')); r.classList.add('sel'); nqReason=r.dataset.r; });
+}
+function logAndNext(){
+  const sel=document.querySelector('.opt.sel');
+  if(!sel){ toast('Pick an outcome first (1–4)'); return; }
+  const o=sel.dataset.o;
+  if(o==='nq' && !nqReason){ toast('Pick a disqualify reason'); return; }
+  if(o==='booked') bump('s-book');
+  advanceQueue();
+}
+function advanceQueue(){
+  const nextName=PROSPECTS[(curProspect+1)%PROSPECTS.length].nm;
+  clearCallUI(); setProspect(curProspect+1);
+  const qn=$('s-queue'); qn.textContent=Math.max(0,parseInt(qn.textContent,10)-1);
+  toast('Logged ✓ · now on '+nextName);
+}
+$('nextBtn').onclick=logAndNext;
+
+/* ===== keyboard-first: 1–4 pick outcome, ↵ log & advance (ignored while typing) ===== */
+document.addEventListener('keydown',e=>{
+  const el=document.activeElement;
+  if(el && (el.id==='chatInput' || el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.isContentEditable)) return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const map={'1':'booked','2':'callback','3':'connected','4':'nq'};
+  if(map[e.key]){ selectOutcome(map[e.key]); e.preventDefault(); }
+  else if(e.key==='Enter'){ logAndNext(); e.preventDefault(); }
+});
 
 /* ===== Interactive mode: type to talk to Renee (live AI) ===== */
 function esc(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
@@ -463,7 +605,7 @@ $('keyBtn').onclick=()=>{ const cur=getKey();
 function ttsUrl(t){ return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q='+encodeURIComponent(String(t).slice(0,190)); }
 
 let convo=[];
-const RENEE_SYS = "You are Renee Webb, owner of Webb Logistics (3 trucks), on a live sales call. A rep is selling you an EPIC LIFE membership: $500 setup + $300/month (business growth + financial protection). Stay fully in character: realistic, busy, a little guarded; ask normal questions; raise natural objections (price, needing to talk to your partner, skepticism); warm up if the rep handles you well. Keep every reply to 1-2 short sentences, under 30 words — it will be spoken aloud. You are ALSO the rep's silent sales co-pilot analyzing the call. Reply with ONLY a raw JSON object (no markdown, no backticks): {\"reply\":\"what Renee says out loud\",\"bant\":{\"budget\":\"\",\"authority\":\"\",\"need\":\"\",\"timeline\":\"\"},\"signal\":null,\"objection\":null,\"note\":\"\",\"closer\":\"\"}. Only fill bant fields you can infer so far; leave the rest empty. Set \"signal\" to {\"tag\":\"...\",\"severity\":\"pos|soft|hard\",\"evidence\":\"quote\"} ONLY when she shows a real green/red signal (e.g. coachable, high intent, blamer/victim, can't afford, uncoachable). Set \"objection\" to {\"text\":\"...\",\"agree\":\"...\",\"reframe\":\"...\"} ONLY when she actually objects. Set \"closer\" to the current CLOSER stage (Clarify|Label|Overview|Sell|Explain|Reinforce) or empty.";
+const RENEE_SYS = "You are Renee Webb, owner of Webb Logistics (3 trucks), on a live sales call. A rep is selling you an EPIC LIFE membership: $500 setup + $300/month (business growth + financial protection). Stay fully in character: realistic, busy, a little guarded; ask normal questions; raise natural objections (price, needing to talk to your partner, skepticism); warm up if the rep handles you well. Keep every reply to 1-2 short sentences, under 30 words — it will be spoken aloud. You are ALSO the rep's silent sales co-pilot analyzing the call. Reply with ONLY a raw JSON object (no markdown, no backticks): {\"reply\":\"what Renee says out loud\",\"bant\":{\"budget\":\"\",\"authority\":\"\",\"need\":\"\",\"timeline\":\"\"},\"signal\":null,\"objection\":null,\"note\":\"\",\"closer\":\"\",\"coach\":\"\"}. Only fill bant fields you can infer so far; leave the rest empty. Set \"coach\" to ONE short line (under 20 words) the rep should say next to move the sale forward. Set \"signal\" to {\"tag\":\"...\",\"severity\":\"pos|soft|hard\",\"evidence\":\"quote\"} ONLY when she shows a real green/red signal (e.g. coachable, high intent, blamer/victim, can't afford, uncoachable). Set \"objection\" to {\"text\":\"...\",\"agree\":\"...\",\"reframe\":\"...\"} ONLY when she actually objects. Set \"closer\" to the current CLOSER stage (Clarify|Label|Overview|Sell|Explain|Reinforce) or empty.";
 
 async function askRenee(key){
   const body={ model:'claude-haiku-4-5-20251001', max_tokens:400, system:RENEE_SYS, messages:convo };
@@ -492,6 +634,7 @@ function applyAI(d){
      '<div class="r"><div class="t">2 · Reframe with a story</div><div class="x">'+esc(d.objection.reframe)+'</div></div></div>'; }
   if(d.note) addNote(d.note);
   if(d.closer) setCloser(d.closer,'live');
+  if(d.coach) setSay('<span class="qmark">“</span>'+esc(d.coach)+'<span class="qmark">”</span>', true);
 }
 async function sendText(txt){
   txt=(txt||'').trim(); if(!txt) return;
@@ -547,7 +690,9 @@ function toggleMic(){
 }
 $('micBtn').onclick=toggleMic;
 setAiStatus();
-setTimeout(()=>{ try{ $('chatInput').focus({preventScroll:true}); }catch(e){} },300);
+/* only grab the chat input when the live-AI tester is connected — otherwise leave
+   focus free so the 1–4 / ↵ keyboard loop works for the scripted demo */
+setTimeout(()=>{ try{ if(getKey()) $('chatInput').focus({preventScroll:true}); }catch(e){} },300);
 
 /* ===== Close the deal: book + charge (simulated) ===== */
 function setPay(t,cls){ $('payStatus').className='cstatus '+(cls||''); $('payStatus').innerHTML=t; }
@@ -619,7 +764,7 @@ function phCall(html,cls){ const c=$('phCall'); if(!c)return;
   else { c.className='ph-call'+(cls?(' '+cls):''); c.innerHTML=html; } }
 
 /* ===== Update detection: poll version.json, prompt to reload on a new build ===== */
-const APP_VERSION='1.0.9';
+const APP_VERSION=PATCH_NOTES[0].v;
 function showUpdateBar(v){
   if(document.getElementById('updbar'))return;
   const b=document.createElement('div'); b.id='updbar';
@@ -640,6 +785,13 @@ async function checkUpdate(){
 checkUpdate();
 setInterval(checkUpdate,60000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkUpdate(); });
+
+/* What's-new: clickable version + auto-open the changelog once per new build */
+$('ver').textContent='v'+APP_VERSION+" · what's new";
+$('ver').onclick=openChangelog;
+$('clClose').onclick=closeChangelog;
+$('clModal').onclick=(e)=>{ if(e.target===$('clModal')) closeChangelog(); };
+try{ if(localStorage.getItem('cockpit_seen_v')!==APP_VERSION){ openChangelog(); localStorage.setItem('cockpit_seen_v',APP_VERSION); } }catch(e){}
 </script>
 </body>
 </html>

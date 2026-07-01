@@ -1,5 +1,6 @@
 # Cockpit demo — changelog (newest first)
 
+- **1.1.0** — Live-call redesign: **SAY THIS** band up top (AI's suggested line + objection rebuttal, always front-and-center), Signals + BANT merged into one always-visible strip, **keyboard-first log→next** (press 1–4 then Enter to log and auto-advance the queue), and "Not qualified" pre-fills its reason from the signals actually heard. Added an in-app **"What's new"** changelog that auto-opens on each new build.
 - **1.0.9** - Renamed the tool to **EPIC Closer** (was Sales Cockpit); landing menu + all builds updated.
 - **1.0.8** — Wired the End button = stop everything + full reset, so the demo restarts cleanly.
 - **1.0.7** — Mic input (Web Speech API): talk to Renee, it transcribes live and the AI reacts.
