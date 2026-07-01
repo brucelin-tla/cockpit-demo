@@ -236,6 +236,21 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 .plan-chips{display:flex;gap:5px;margin-bottom:8px}
 .plan{flex:1;padding:7px 4px;font-size:.72rem;font-weight:700;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer}
 .plan.sel{background:rgba(59,130,246,.18);border-color:var(--blue);color:#bcd4ff}
+/* v1.8.0: dock actions open pop-ups (pay tier / booking / video-call platform) */
+.cl-modal.pop-top{z-index:1100}
+.confirm-actions{display:flex;gap:9px;margin-top:15px}
+.confirm-actions .btn{flex:1;justify-content:center}
+.cl-modal.pop-left{justify-content:flex-start}
+.cl-box.pop-sm{max-width:360px}
+.cl-box.pop-md{max-width:430px}
+.close-cta{display:flex;gap:7px;flex-wrap:wrap}
+.mini-cta{flex:1 1 auto;min-width:118px;font-size:.8rem;font-weight:700;padding:10px 11px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;text-align:left}
+.mini-cta:hover{border-color:var(--accent)}
+.vid-choices{display:flex;gap:9px}
+.vidbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;font-weight:700;font-size:.92rem}
+.vidbtn:hover{border-color:var(--accent);background:var(--bg2)}
+.vidbtn .vi{font-size:1.7rem;line-height:1}
+.vidbtn small{display:block;font-weight:500;font-size:.66rem;color:var(--text2);margin-top:2px}
 </style>
 </head>
 <body>
@@ -328,32 +343,13 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
         <input id="noteInput" class="note-input" placeholder="+ add a note…" autocomplete="off">
       </div>
 
-      <!-- Close the deal — moved up, above the outcome -->
+      <!-- Close the deal — controls open as pop-ups (from here or the phone dock) -->
       <div class="panel" id="closePanel">
         <div class="lbl">🤝 Close the deal <span class="muted" style="text-transform:none;letter-spacing:0">· lock it in before you hang up</span></div>
-        <div class="close-grid">
-          <div class="close-col">
-            <div class="ct">📅 Book the 3B call</div>
-            <div class="bk-modes" id="bkModes">
-              <button class="bkmode sel" data-m="closed">✅ Closed → 3B onboarding</button>
-              <button class="bkmode" data-m="open">🔁 Not closed → 3B + closer</button>
-            </div>
-            <div class="offer" id="bkDesc"></div>
-            <div class="cal-dates" id="calDates"></div>
-            <div class="cal-times" id="calTimes"></div>
-            <div id="bookStatus" class="cstatus">Pick a day in the next 2 weeks, then a time.</div>
-          </div>
-          <div class="close-col">
-            <div class="ct">💳 Collect payment</div>
-            <div class="plan-chips" id="planChips">
-              <button class="plan sel" data-p="monthly">Monthly</button>
-              <button class="plan" data-p="annual">Annual</button>
-              <button class="plan" data-p="pro">Pro</button>
-            </div>
-            <div class="offer" id="planDesc">EPIC LIFE · <b>$500 setup + $300/mo</b></div>
-            <button id="payBtn" class="paybtn">Send payment link via SMS</button>
-            <div id="payStatus" class="cstatus">No link sent yet.</div>
-          </div>
+        <div class="close-cta">
+          <button class="mini-cta" onclick="openPop('bookPop')">📅 Booking</button>
+          <button class="mini-cta" onclick="openPop('videoPop')">📹 Video call</button>
+          <span class="muted" style="font-size:.72rem;align-self:center">💳 Take payment from the phone → Pay link</span>
         </div>
       </div>
 
@@ -379,17 +375,16 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
         <div class="ph-appbar"><span>💬 <span id="phWho">Renee Webb</span></span><button id="phCallBtn" class="ph-callbtn">📞 Call</button></div>
         <div id="phMsgs" class="ph-msgs"><div class="ph-empty">Your thread with the prospect — text or call.</div></div>
         <div class="ph-quick" id="phQuick">
-          <button data-q="pay" title="Text the EPIC LIFE checkout link">💳 Pay link <kbd>P</kbd></button>
-          <button data-q="video" title="Text the how-it-works video">🎬 Video <kbd>V</kbd></button>
-          <button data-q="book" title="Text your booking link">📅 Booking <kbd>B</kbd></button>
-          <button data-q="zoom" title="Text the Zoom room">🔗 Zoom <kbd>Z</kbd></button>
+          <button data-q="pay" title="Collect payment — pick a tier, then send">💳 Pay link <kbd>P</kbd></button>
+          <button data-q="video" title="Send a video-call invite — Zoom or FaceTime">📹 Video <kbd>V</kbd></button>
+          <button data-q="book" title="Booking — pick a day + time">📅 Booking <kbd>B</kbd></button>
         </div>
         <div class="ph-compose">
           <input id="phInput" type="text" placeholder="Text the prospect…" autocomplete="off">
           <button id="phSend" title="Send">➤</button>
         </div>
       </div></div>
-      <div class="ph-legend"><b>Hotkeys</b> · <b>P</b> pay · <b>V</b> video · <b>B</b> booking · <b>Z</b> zoom · <b>T</b> text · <b>M</b> mute</div>
+      <div class="ph-legend"><b>Hotkeys</b> · <b>P</b> pay · <b>V</b> video · <b>B</b> booking · <b>T</b> text · <b>M</b> mute</div>
     </div>
   </div>
   <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.1.0</span></div>
@@ -420,6 +415,69 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
   </div>
 </div>
 
+<!-- 💳 Collect payment — pops up from the phone dock / close-the-deal -->
+<div id="payPop" class="cl-modal hidden">
+  <div class="cl-box pop-sm">
+    <div class="cl-head"><b>💳 Collect payment</b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div class="plan-chips" id="planChips">
+        <button class="plan sel" data-p="monthly">Monthly</button>
+        <button class="plan" data-p="annual">Annual</button>
+        <button class="plan" data-p="pro">Pro</button>
+      </div>
+      <div class="offer" id="planDesc">EPIC LIFE · <b>$500 setup + $300/mo</b></div>
+      <button id="payBtn" class="paybtn">Send payment link via SMS</button>
+      <div id="payStatus" class="cstatus">No link sent yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 📅 Book the 3B call — pops up to the LEFT -->
+<div id="bookPop" class="cl-modal pop-left hidden">
+  <div class="cl-box pop-md">
+    <div class="cl-head"><b>📅 Booking</b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div class="bk-modes" id="bkModes">
+        <button class="bkmode" data-m="callback">📞 Schedule callback</button>
+        <button class="bkmode sel" data-m="closed">✅ Closed → 3B onboarding</button>
+        <button class="bkmode" data-m="open">🔁 Not closed → 3B + closer</button>
+      </div>
+      <div class="offer" id="bkDesc"></div>
+      <div class="cal-dates" id="calDates"></div>
+      <div class="cal-times" id="calTimes"></div>
+      <div id="bookStatus" class="cstatus">Pick a day in the next 2 weeks, then a time.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 📹 Video call — pick the platform, we text the invite -->
+<div id="videoPop" class="cl-modal hidden">
+  <div class="cl-box pop-sm">
+    <div class="cl-head"><b>📹 Send a video-call invite</b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div class="muted" style="font-size:.8rem;margin-bottom:11px">Pick how you'll meet — we'll text the invite to the prospect.</div>
+      <div class="vid-choices">
+        <button class="vidbtn" data-v="zoom"><span class="vi">🔗</span>Zoom<small>zoom.us room</small></button>
+        <button class="vidbtn" data-v="facetime"><span class="vi">📷</span>FaceTime<small>Apple FaceTime link</small></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Confirm-before-send (shown on mobile so a stray tap can't text the prospect) -->
+<div id="confirmPop" class="cl-modal pop-top hidden">
+  <div class="cl-box pop-sm">
+    <div class="cl-head"><b id="confirmTitle">Confirm</b><span class="cl-x" id="confirmX" title="cancel">✕</span></div>
+    <div class="cl-body">
+      <div id="confirmMsg" style="font-size:.9rem;line-height:1.55"></div>
+      <div class="confirm-actions">
+        <button class="btn ghost" id="confirmNo">Cancel</button>
+        <button class="btn primary" id="confirmYes">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -428,6 +486,13 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.8.0',d:'2026-06-30',n:[
+ "Closing controls are now tap-to-open pop-ups — great on mobile. From the phone dock: 💳 Pay link opens the payment-tier picker (Monthly / Annual / Pro), 📅 Booking opens the 2-week calendar, and 📹 Video opens a Zoom-or-FaceTime choice before texting the invite.",
+ "Payment lives on the phone now — tap 💳 Pay link to pick the tier and send. Removed the separate payment box from the cockpit.",
+ "Booking got a third option — 📞 Schedule callback (before the Closed path), using the same calendar; it also sets your Callback outcome. Renamed “Book the 3B call” to just “Booking”.",
+ "Video call lets you pick the platform: Zoom room or an Apple FaceTime link.",
+ "On mobile, every send asks you to confirm first — payment, video, booking — so a stray tap can't fire off to the prospect. Desktop stays one-tap.",
+]},
 {v:'1.7.0',d:'2026-06-30',n:[
  "The top momentum bar now shows Closed deals and Revenue collected — when a payment clears, both tick up by the plan you sold (Monthly +$800, Annual +$3,500, Pro +$9,700).",
 ]},
@@ -691,7 +756,7 @@ function clearCallUI(){
   $('flagAlert').innerHTML='';
   var bl={'b-budget':'💰 Budget','b-auth':'👤 Authority','b-need':'🎯 Need','b-time':'⏱️ Timeline'};
   Object.keys(bl).forEach(function(id){ $(id).className='bcell'; var v=$(id).querySelector('.v'); v.removeAttribute('contenteditable'); v.textContent='—'; });
-  $('noteInput').value=''; $('objModal').classList.add('hidden');
+  $('noteInput').value=''; $('objModal').classList.add('hidden'); try{closePops();hideConfirm();}catch(e){}
   setCloser('Clarify','listening…'); resetSay();
   $('objBox').innerHTML='';
   $('notes').innerHTML='<span class="muted" style="font-size:.76rem">…</span>';
@@ -794,7 +859,7 @@ $('nextBtn').onclick=logAndNext;
 
 /* ===== keyboard-first: 1–4 pick outcome, ↵ log & advance (ignored while typing) ===== */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ closeChangelog(); $('objModal').classList.add('hidden'); return; }
+  if(e.key==='Escape'){ closeChangelog(); $('objModal').classList.add('hidden'); closePops(); try{hideConfirm();}catch(e){} return; }
   const el=document.activeElement;
   if(el && (el.id==='chatInput' || el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.isContentEditable)) return;
   if(e.metaKey||e.ctrlKey||e.altKey) return;
@@ -971,8 +1036,9 @@ function setBkMode(m){
   bkMode=m;
   document.querySelectorAll('.bkmode').forEach(b=>b.classList.toggle('sel',b.dataset.m===m));
   const nm=curProspectObj().nm;
-  $('bkDesc').innerHTML = m==='closed'
-    ? 'Client Success · 15 min — guide '+nm+' to pull the <b>MyFICO 3-bureau (3B) report</b> together, then onboard to the EPIC LIFE portal.'
+  $('bkDesc').innerHTML =
+    m==='callback' ? 'Pick when '+nm+' wants you to call back — we’ll text a reminder and queue them for that time.'
+    : m==='closed' ? 'Client Success · 15 min — guide '+nm+' to pull the <b>MyFICO 3-bureau (3B) report</b> together, then onboard to the EPIC LIFE portal.'
     : 'Client Success pulls '+nm+'’s <b>MyFICO 3B report</b> on the call, then brings in a <b>senior closer</b> to close on the demo Zoom ('+nm+' + partner).';
 }
 document.querySelectorAll('.bkmode').forEach(b=>b.onclick=()=>setBkMode(b.dataset.m));
@@ -995,19 +1061,25 @@ function renderCalDates(){
 function renderCalTimes(){
   const box=$('calTimes'); if(!box) return;
   box.innerHTML=calDate? CAL_TIMES.map(t=>'<button class="cal-time" data-t="'+t+'">'+t+'</button>').join('') : '';
-  box.querySelectorAll('.cal-time').forEach(b=>b.onclick=()=>{ box.querySelectorAll('.cal-time').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); calTime=b.getAttribute('data-t'); confirmBooking(); });
+  box.querySelectorAll('.cal-time').forEach(b=>b.onclick=()=>{ box.querySelectorAll('.cal-time').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); calTime=b.getAttribute('data-t'); var when=calDate+' · '+calTime, nm=curProspectObj().nm, cb=(bkMode==='callback'); maybeConfirm(confirmBooking, cb?'Confirm callback':'Confirm booking', cb?('Schedule a callback with <b>'+esc(nm)+'</b> for <b>'+when+'</b>?'):('Book <b>'+when+'</b> for <b>'+esc(nm)+'</b> and text the confirmation?'), cb?'Schedule it':'Book it'); });
 }
 function confirmBooking(){
   if(!calDate||!calTime) return; const when=calDate+' · '+calTime, nm=curProspectObj().nm;
   $('bookStatus').className='cstatus ok';
-  if(bkMode==='closed'){
+  if(bkMode==='callback'){
+    $('bookStatus').innerHTML='✅ Callback scheduled with '+nm+' · <b>'+when+'</b>';
+    phMsg('📞 Scheduled a callback with you — '+when+'. Talk then!','me');
+    try{ selectOutcome('callback'); }catch(e){}
+    toast('Callback set — '+when);
+  } else if(bkMode==='closed'){
     $('bookStatus').innerHTML='✅ 3B onboarding booked — '+nm+' + Client Success · <b>'+when+'</b>';
     phMsg('📅 Booked your <b>3B onboarding call</b> — '+when+'. We’ll pull your MyFICO 3-bureau report together and set up your EPIC LIFE portal.','me');
+    toast('Booked 3B — '+when);
   } else {
     $('bookStatus').innerHTML='✅ 3B + closer call booked — '+nm+' + partner + Client Success + closer · <b>'+when+'</b>';
     phMsg('📅 Booked your <b>3B strategy call</b> — '+when+'. We’ll pull your MyFICO 3-bureau report together and walk you + your partner through the full plan.','me');
+    toast('Booked 3B — '+when);
   }
-  toast('Booked 3B — '+when);
 }
 renderCalDates();
 
@@ -1035,7 +1107,7 @@ async function sendPaymentLink(){
   $('s-closed').textContent=parseInt($('s-closed').textContent,10)+1; revenue+=pl.collect; updateRev();
   try{ setBkMode('closed'); }catch(e){}
 }
-$('payBtn').onclick=sendPaymentLink;
+$('payBtn').onclick=()=>{ if($('payBtn').disabled){ toast('Payment link already sent'); return; } var pl=PLANS[curPlan], nm=curProspectObj().nm; maybeConfirm(sendPaymentLink,'Send payment link','Text <b>'+esc(nm)+'</b> the <b>'+pl.label+'</b> checkout link — '+pl.short+'?','Send link'); };
 
 /* ===== Rep phone: call timer + text thread + quick-send dock ===== */
 let callTimerId=null, callSecs=0;
@@ -1046,13 +1118,39 @@ function stopCallTimer(){ if(callTimerId){ clearInterval(callTimerId); callTimer
 function phOnCall(){ phCall('📞 '+curProspectObj().nm+' · <span id="phTimer">00:00</span>',''); startCallTimer(); }
 function phEndCall(){ stopCallTimer(); phCall(null); }
 function phSendRep(html){ phMsg(html,'me'); toast('Text sent 📤'); }
+/* dock actions open a pop-up (pick a tier / time / platform) instead of firing blind */
+function openPop(id){ closePops(); const el=$(id); if(el) el.classList.remove('hidden'); }
+function closePops(){ ['payPop','bookPop','videoPop'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); }
 function firePhoneQuick(q){
-  if(q==='pay'){ sendPaymentLink(); return; }
-  if(q==='video') phSendRep('🎬 Quick 2-min on how EPIC LIFE works — worth a watch before we talk:<br><span class="lk">tla.co/v/epic-intro</span>');
-  else if(q==='book') phSendRep('📅 Grab a time that works for you here:<br><span class="lk">tla.co/book/'+curId+'</span>');
-  else if(q==='zoom') phSendRep('🔗 Here’s our Zoom room for the strategy call:<br><span class="lk">zoom.us/j/855-epic-life</span>');
+  if(q==='pay') openPop('payPop');
+  else if(q==='video'||q==='zoom') openPop('videoPop');
+  else if(q==='book') openPop('bookPop');
 }
 document.querySelectorAll('#phQuick button').forEach(b=>b.onclick=()=>firePhoneQuick(b.getAttribute('data-q')));
+
+/* Mobile = confirm before any action that texts the prospect or takes payment (a stray
+   tap on a phone shouldn't send). Desktop stays one-tap for speed. */
+function isMobile(){ try{ return window.matchMedia('(max-width:720px)').matches || window.matchMedia('(pointer:coarse)').matches; }catch(e){ return false; } }
+let _confirmCb=null;
+function hideConfirm(){ var el=$('confirmPop'); if(el) el.classList.add('hidden'); _confirmCb=null; }
+function askConfirm(title,msg,okLabel,cb){ $('confirmTitle').textContent=title; $('confirmMsg').innerHTML=msg; $('confirmYes').textContent=okLabel||'Confirm'; _confirmCb=cb; $('confirmPop').classList.remove('hidden'); }
+function maybeConfirm(fn,title,msg,okLabel){ if(isMobile()) askConfirm(title,msg,okLabel,fn); else fn(); }
+$('confirmYes').onclick=()=>{ var cb=_confirmCb; hideConfirm(); if(cb) cb(); };
+$('confirmNo').onclick=hideConfirm;
+$('confirmX').onclick=hideConfirm;
+$('confirmPop').onclick=(e)=>{ if(e.target===$('confirmPop')) hideConfirm(); };
+
+/* video-call invite — rep picks Zoom or FaceTime, we text the join link */
+function sendVideoInvite(v){
+  if(v==='facetime') phSendRep('📷 I’ll FaceTime you for the video call — tap to join:<br><span class="lk">facetime.apple.com/join#epic-life</span>');
+  else phSendRep('🔗 Here’s our Zoom room for the strategy call:<br><span class="lk">zoom.us/j/855-epic-life</span>');
+  closePops();
+}
+document.querySelectorAll('#videoPop .vidbtn').forEach(b=>b.onclick=()=>{ var v=b.getAttribute('data-v'), nm=curProspectObj().nm, label=(v==='facetime'?'FaceTime':'Zoom'); maybeConfirm(()=>sendVideoInvite(v),'Send video invite','Text <b>'+esc(nm)+'</b> a <b>'+label+'</b> video-call invite?','Send invite'); });
+
+/* pop-up dismiss: ✕ button or a tap on the backdrop */
+document.querySelectorAll('[data-pop-close]').forEach(x=>x.onclick=closePops);
+['payPop','bookPop','videoPop'].forEach(id=>{ const el=$(id); if(el) el.onclick=(e)=>{ if(e.target===el) closePops(); }; });
 
 /* text the prospect + get a live AI reply (DM sales) */
 function smsSys(){
