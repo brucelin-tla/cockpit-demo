@@ -264,8 +264,23 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 .cl-modal.pop-left{justify-content:flex-start}
 .cl-box.pop-sm{max-width:360px}
 .cl-box.pop-md{max-width:430px}
-.close-cta{display:flex;gap:7px;flex-wrap:wrap}
-.mini-cta{flex:1 1 auto;min-width:118px;font-size:.8rem;font-weight:700;padding:10px 11px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;text-align:left}
+.close-cta{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.mini-cta{flex:0 1 auto;min-width:96px;font-size:.78rem;font-weight:700;padding:9px 11px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;text-align:center}
+.close-rec{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+.cr-tier{font-weight:800;font-size:.98rem}
+.cr-price{font-weight:600;font-size:.8rem;color:var(--text2);margin-left:6px}
+.cr-incl{margin:7px 0 0;padding-left:17px}
+.cr-incl li{font-size:.76rem;color:var(--text2);margin-bottom:3px;line-height:1.4}
+.close-ready{margin:10px 0;padding:7px 11px;border-radius:8px;font-size:.8rem;font-weight:700}
+.close-ready.ready{background:rgba(16,185,129,.14);color:#7ff0c8}
+.close-ready.qualify{background:rgba(245,158,11,.14);color:#ffd58a}
+.close-ready.walk{background:rgba(239,68,68,.14);color:#ffb1b1}
+.close-line{margin-bottom:11px}
+.cl-lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:700;margin-bottom:4px}
+.cl-say{font-size:.9rem;line-height:1.5;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:9px 12px}
+.cta-primary{flex:1 1 100%;padding:12px 16px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:800;font-size:.92rem;cursor:pointer}
+.cta-primary.pay{background:var(--blue)}
+.cta-primary.walk{background:var(--red)}
 .mini-cta:hover{border-color:var(--accent)}
 .vid-choices{display:flex;gap:9px}
 .vidbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;font-weight:700;font-size:.92rem}
@@ -362,11 +377,14 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 
       <!-- Close the deal — controls open as pop-ups (from here or the phone dock) -->
       <div class="panel" id="closePanel">
-        <div class="lbl">🤝 Close the deal <span class="muted" style="text-transform:none;letter-spacing:0">· lock it in before you hang up</span></div>
+        <div class="lbl">🤝 Close the deal <span class="muted" style="text-transform:none;letter-spacing:0">· recommended for this prospect</span></div>
+        <div class="close-rec" id="closeRec"></div>
+        <div class="close-ready" id="closeReady"></div>
+        <div class="close-line" id="closeLine"></div>
         <div class="close-cta">
+          <button class="cta-primary" id="ctaPrimary">…</button>
           <button class="mini-cta" onclick="openPop('bookPop')">📅 Booking</button>
-          <button class="mini-cta" onclick="openPop('videoPop')">📹 Video call</button>
-          <span class="muted" style="font-size:.72rem;align-self:center">💳 Take payment from the phone → Pay link</span>
+          <button class="mini-cta" onclick="openPop('videoPop')">📹 Video</button>
         </div>
       </div>
 
@@ -519,6 +537,9 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.13.0',d:'2026-06-30',n:[
+ "Close-the-deal is now a live decision layer, not just launchers. It reads the call and shows: the recommended plan for THIS prospect (with the inclusions that matter to them), a green/amber/red readiness check (BANT filled? can they afford it? any hard flag?), an assumptive closing line to say, and one primary action — Take payment, Book the 3B call, or Mark not qualified — that updates as the call develops.",
+]},
 {v:'1.12.0',d:'2026-06-30',n:[
  "Real EPIC LIFE plans + inclusions everywhere. The Pay-link popup is now a mini pitch deck: Monthly ($800 to start, then $300/mo), Annual ($3,500 to start, then $3,000/yr — best value), Pro ($9,700/yr — premium), each with its real what's-included list.",
  "It suggests the most relevant tier for the prospect — budget-tight → Monthly, real-estate / business build-out cues → Pro, otherwise Annual (best value).",
@@ -687,7 +708,7 @@ function addTranscript(who,txt){
   const d=document.createElement('div'); d.className='tline '+(who==='Renee'?'them':'you');
   d.innerHTML='<span class="who">'+who+':</span> '+txt; t.appendChild(d); t.scrollTop=t.scrollHeight;
 }
-function setBant(cell,val,cls){const el=$(cell);el.className='bcell '+cls;el.querySelector('.v').textContent=val;}
+function setBant(cell,val,cls){const el=$(cell);el.className='bcell '+cls;el.querySelector('.v').textContent=val; try{renderClose()}catch(e){}}
 function setCloser(stage,hint){$('closer-stage').textContent=stage; if(hint)$('closer-hint').textContent=hint;}
 /* SAY THIS hero — the line the rep should say now */
 function setSay(html,cue){ const el=$('sayLine'); el.className='say'+(cue?' cue':''); el.innerHTML=html; }
@@ -696,7 +717,7 @@ function setSayFromScript(text){
   if(/^\s*\[/.test(text)) setSay('<span class="qmark">👉</span> Use the rebuttal below — agree, then tell the story.', true);
   else setSay('<span class="qmark">“</span>'+esc(text)+'<span class="qmark">”</span>', true);
 }
-function addNote(txt){const n=$('notes'); if(n.querySelector('.muted'))n.innerHTML=''; const d=document.createElement('div');d.className='n';d.textContent='• '+txt;n.appendChild(d);}
+function addNote(txt){const n=$('notes'); if(n.querySelector('.muted'))n.innerHTML=''; const d=document.createElement('div');d.className='n';d.textContent='• '+txt;n.appendChild(d); try{renderClose()}catch(e){}}
 function addChip(label,cls,isNew){
   const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
   const s=document.createElement('span'); s.className='chip '+cls;
@@ -704,6 +725,7 @@ function addChip(label,cls,isNew){
   c.appendChild(s);
   if(cls!=='pos' && heardSignals.indexOf(label)<0) heardSignals.push(label);
   if(isNew) setTimeout(()=>{const nw=s.querySelector('.new'); if(nw)nw.remove();},2600);
+  try{renderClose()}catch(e){}
 }
 function flagAlert(tag,quote){
   $('flagAlert').innerHTML='<div class="flag-alert">⚑ <div><b>Signal — '+tag+'.</b> Heard: “'+quote+'.” Added to profile (soft flag). <span style="color:#ffd58a;cursor:pointer">undo</span></div></div>';
@@ -823,7 +845,7 @@ function clearCallUI(){
   try{ setBkMode('closed'); setPlan('monthly'); }catch(e){}
   phEndCall(); $('phMsgs').innerHTML='<div class="ph-empty">Your thread with the prospect — text or call.</div>';
   convo=[]; smsConvo=[]; heardSignals=[]; nqReason='';
-  setPhCallBtn();
+  setPhCallBtn(); try{renderClose()}catch(e){}
 }
 /* select a prospect into the cockpit (fresh call surfaces) */
 function selectProspect(id, clear){
@@ -839,6 +861,7 @@ function selectProspect(id, clear){
   $('histBox').classList.add('hidden');
   $('histToggle').innerHTML='🕐 History ('+h.length+') ▾';
   document.querySelectorAll('#queueList .qcard').forEach(c=>c.classList.toggle('active', c.getAttribute('data-id')===p.id));
+  try{renderClose()}catch(e){}
 }
 /* render the queue from the current focus */
 function renderQueue(){
@@ -1208,6 +1231,46 @@ function openPayPop(){
   $('planRec').innerHTML='⭐ Suggested for '+esc(nm)+': <b>'+PLANS[t].label+'</b> — '+why;
   openPop('payPop');
 }
+
+/* ===== Close-the-deal decision layer: recommended tier + readiness + closing line + primary CTA ===== */
+function closeReadiness(){
+  var hardFlag=document.querySelectorAll('#chips .chip.hard').length>0;
+  var afford=!$('b-budget').classList.contains('bad');
+  var bantFilled=['b-budget','b-auth','b-need','b-time'].filter(function(id){var v=$(id).querySelector('.v').textContent; return v&&v!=='—';}).length;
+  if(hardFlag) return {k:'walk', label:'🔴 Walk — hard flag heard', cta:'nq'};
+  if(!afford) return {k:'walk', label:'🔴 Can’t afford the base (~$300/mo)', cta:'nq'};
+  if(bantFilled>=3) return {k:'ready', label:'🟢 Qualified — ready to close', cta:'pay'};
+  return {k:'qualify', label:'🟡 Keep qualifying — '+bantFilled+'/4 BANT filled', cta:'book'};
+}
+function relevantIncl(tier){
+  var ctx=($('b-need').querySelector('.v').textContent+' '+$('notes').textContent+' '+$('transcript').textContent).toLowerCase();
+  var list=PLANS[tier].incl.filter(function(x){return !/everything in/i.test(x);});
+  var scored=list.map(function(x){ var hits=x.toLowerCase().split(/[^a-z]+/).filter(function(w){return w.length>4 && ctx.indexOf(w)>=0;}).length; return {x:x,s:hits}; });
+  scored.sort(function(a,b){return b.s-a.s;});
+  return scored.slice(0,3).map(function(o){return o.x;});
+}
+function closeLineText(tier, status, nm){
+  var pl=PLANS[tier];
+  if(status==='ready') return '“So '+nm+', let’s get you started on '+pl.label+' today — '+pl.short+'. I’ll text your checkout link right now, sound good?”';
+  if(status==='qualify') return '“'+nm+', from what you’ve shared, '+pl.label+' is the fit. Let’s lock a quick 3B call to pull your numbers and map it out — this week or next?”';
+  return '';
+}
+function renderClose(){
+  if(!$('closeRec')) return;
+  try{
+    var tier=recommendTier(), nm=curProspectObj().nm, r=closeReadiness(), pl=PLANS[tier];
+    $('closeRec').innerHTML='<div><span class="cr-tier">⭐ '+esc(pl.label)+'</span><span class="cr-price">'+esc(pl.short)+'</span></div>'+
+      '<ul class="cr-incl">'+relevantIncl(tier).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+    $('closeReady').className='close-ready '+r.k; $('closeReady').textContent=r.label;
+    var line=closeLineText(tier,r.k,nm);
+    $('closeLine').innerHTML = line ? '<div class="cl-lbl">🗣️ Your close</div><div class="cl-say">'+esc(line)+'</div>' : '';
+    var cta=$('ctaPrimary');
+    if(r.cta==='pay'){ cta.textContent='💳 Take payment · '+pl.label+' ('+pl.short+')'; cta.className='cta-primary pay'; cta.onclick=openPayPop; }
+    else if(r.cta==='book'){ cta.textContent='📅 Book the 3B call'; cta.className='cta-primary'; cta.onclick=function(){openPop('bookPop');}; }
+    else { cta.textContent='🚫 Mark not qualified'; cta.className='cta-primary walk'; cta.onclick=function(){ selectOutcome('nq'); toast('Marked not qualified — pick a reason'); }; }
+  }catch(e){}
+}
+renderClose();
 
 async function sendPaymentLink(){
   if($('payBtn').disabled){ toast('Payment link already sent'); return; }
