@@ -170,6 +170,25 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 .cl-d{font-size:.72rem;color:var(--muted);margin-left:8px}
 .cl-entry ul{margin:8px 0 0;padding-left:18px}
 .cl-entry li{font-size:.82rem;color:var(--text2);margin-bottom:6px;line-height:1.5}
+/* ===== v1.2.0: mini buttons, objection bank, history, note input ===== */
+.mini-btn{font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.mini-btn:hover{border-color:var(--accent);color:var(--text)}
+.btn.vm{background:var(--bg3);color:#ffd58a;border:1px solid rgba(245,158,11,.4)}
+.obj-search{width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem}
+.obj-search:focus{outline:none;border-color:var(--accent)}
+.ob-q{font-weight:700;font-size:.86rem;color:var(--text);margin-bottom:7px}
+.ob-r{background:var(--bg2);border-radius:var(--radius-sm);padding:7px 10px;margin-bottom:6px;font-size:.8rem;color:var(--text2)}
+.ob-t{display:block;font-size:.6rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.hist-toggle{cursor:pointer;color:var(--blue);font-weight:600}
+.hist-toggle:hover{text-decoration:underline}
+.hist-box{margin-top:9px;border-top:1px solid var(--border);padding-top:9px}
+.hist-item{display:flex;gap:10px;font-size:.75rem;color:var(--text2);padding:4px 0}
+.hist-item .hd{color:var(--muted);min-width:52px;font-weight:600}
+.bcell{cursor:pointer}
+.bcell .v[contenteditable="true"]{outline:1px solid var(--accent);border-radius:4px;padding:0 3px;color:var(--text)}
+#closer-stage{cursor:pointer}
+.note-input{width:100%;margin-top:9px;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.82rem}
+.note-input:focus{outline:none;border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -198,6 +217,7 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
   <div class="controls">
     <button id="startBtn" class="btn call">▶ Start call &nbsp;<span class="muted" style="font-weight:600">(AI plays the prospect)</span></button>
     <button id="muteBtn" class="btn ghost">🔊 Voice on</button>
+    <button id="vmBtn" class="btn vm" title="No answer → drop a pre-recorded voicemail and jump to the next prospect">📩 No answer · drop VM</button>
     <span class="muted" style="font-size:.78rem">Demo: a synthetic prospect talks; EPIC Closer reacts live — nothing is really dialed.</span>
   </div>
 
@@ -220,14 +240,16 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
         <div class="callinfo">
           <span>📍 Florida · <span id="locTime">—</span> · <span id="tzStatus">—</span></span>
           <span>📞 Caller ID <b>(305) 555-0142</b> · local presence ✓</span>
-          <span class="muted">🕒 Best window 9am–7pm ET</span>
+          <span id="histToggle" class="hist-toggle">🕐 History (0) ▾</span>
         </div>
+        <div id="histBox" class="hist-box hidden"></div>
       </div>
 
       <!-- SAY THIS — the loudest surface: what to say now + objection rebuttal -->
       <div class="panel hero">
         <div class="hero-top">
-          <span class="closer-badge">🤖 CLOSER · <span id="closer-stage" class="stage">Clarify</span></span>
+          <span class="closer-badge">🤖 CLOSER · <span id="closer-stage" class="stage" title="tap to advance stage">Clarify</span></span>
+          <button id="objBankBtn" class="mini-btn" title="Search the objection rebuttal bank">📚 Objections</button>
           <span class="muted" id="closer-hint" style="margin-left:auto">listening…</span>
         </div>
         <div id="sayLine" class="say"><span class="muted" style="font-size:.82rem">Your suggested line appears here as the call moves — glance, say it, keep talking.</span></div>
@@ -248,8 +270,9 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
       </div>
 
       <div class="panel">
-        <div class="lbl">📝 Live notes <span class="muted" style="text-transform:none;letter-spacing:0">· auto-captured</span></div>
+        <div class="lbl">📝 Live notes <span class="muted" style="text-transform:none;letter-spacing:0">· auto-captured · type your own while you talk</span></div>
         <div id="notes" class="notes"><span class="muted" style="font-size:.76rem">…</span></div>
+        <input id="noteInput" class="note-input" placeholder="+ add a note…" autocomplete="off">
       </div>
 
       <!-- End-of-call action bar — the sacred loop, keyboard-first -->
@@ -327,6 +350,14 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
   </div>
 </div>
 
+<div id="objModal" class="cl-modal hidden">
+  <div class="cl-box">
+    <div class="cl-head"><b>📚 Objection bank <span class="muted" style="font-weight:400;font-size:.8rem">· agree → reframe → story</span></b><span id="objModalClose" class="cl-x" title="close">✕</span></div>
+    <div style="padding:12px 16px 4px"><input id="objSearch" class="obj-search" placeholder="Search… price, partner, time, think about it, busy"></div>
+    <div id="objBankBody" class="cl-body"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -335,6 +366,12 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.2.0',d:'2026-06-30',n:[
+ "Voicemail drop — one tap on a no-answer drops a pre-recorded VM and jumps you straight to the next prospect. The biggest volume multiplier on a big list.",
+ "Pre-call history — a “🕐 History” line in the prospect header expands past touches (dispositions, objections, promises) so you walk in knowing the story.",
+ "Objection bank — tap “📚 Objections” for a searchable library of agree → reframe → story rebuttals, alongside the live detector.",
+ "Polish: tap any BANT cell to fix what the AI heard, tap the CLOSER stage to advance it yourself, and type your own notes while you talk.",
+]},
 {v:'1.1.0',d:'2026-06-30',n:[
  "Cockpit rebuilt around the live call so you can just talk and close. The screen now guides your eye instead of making you scroll.",
  "New “SAY THIS” band up top — the AI's suggested line is always front-and-center, and objection rebuttals (Agree → Story) pop right there so you never hunt for them mid-call.",
@@ -359,9 +396,16 @@ function closeChangelog(){ $('clModal').classList.add('hidden'); }
 let muted=false, voice=null, started=false, curAudio=null, runToken=0;
 let heardSignals=[], nqReason='', curProspect=0;
 const PROSPECTS=[
-  {ini:'RW',nm:'Renee Webb', sub:'Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida'},
-  {ini:'DL',nm:'Dana Liu',   sub:'Liu Freight · Owner · Opened proposal 2× · 📍 Texas'},
-  {ini:'RP',nm:'Reggie Park', sub:'Park &amp; Co · Owner · Quote expires Fri · 📍 Nevada'}
+  {ini:'RW',nm:'Renee Webb', sub:'Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida', hist:[
+    {d:'Jun 24',t:'📞 Callback — promised to decide by today'},
+    {d:'Jun 18',t:'✅ Connected — raised price, wanted to talk to her partner'},
+    {d:'Jun 10',t:'👀 Opened proposal 2×'}]},
+  {ini:'DL',nm:'Dana Liu',   sub:'Liu Freight · Owner · Opened proposal 2× · 📍 Texas', hist:[
+    {d:'Jun 22',t:'👀 Opened proposal 2×'},
+    {d:'Jun 15',t:'✅ Connected — interested, timing concern (Q3)'}]},
+  {ini:'RP',nm:'Reggie Park', sub:'Park &amp; Co · Owner · Quote expires Fri · 📍 Nevada', hist:[
+    {d:'Jun 20',t:'📄 Quote sent — expires Fri'},
+    {d:'Jun 12',t:'📩 Voicemail dropped — no callback yet'}]}
 ];
 
 function pickVoice(){
@@ -520,7 +564,8 @@ function clearCallUI(){
   $('chips').innerHTML='<span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span>';
   $('flagAlert').innerHTML='';
   var bl={'b-budget':'💰 Budget','b-auth':'👤 Authority','b-need':'🎯 Need','b-time':'⏱️ Timeline'};
-  Object.keys(bl).forEach(function(id){ $(id).className='bcell'; $(id).querySelector('.v').textContent='—'; });
+  Object.keys(bl).forEach(function(id){ $(id).className='bcell'; var v=$(id).querySelector('.v'); v.removeAttribute('contenteditable'); v.textContent='—'; });
+  $('noteInput').value=''; $('objModal').classList.add('hidden');
   setCloser('Clarify','listening…'); resetSay();
   $('objBox').innerHTML='';
   $('notes').innerHTML='<span class="muted" style="font-size:.76rem">…</span>';
@@ -538,6 +583,10 @@ function setProspect(i){
   const p=PROSPECTS[curProspect];
   $('pAvatar').textContent=p.ini; $('pName').textContent=p.nm; $('pSub').innerHTML=p.sub;
   document.querySelectorAll('.qcard').forEach((c,idx)=>c.classList.toggle('active',idx===curProspect));
+  const h=p.hist||[];
+  $('histBox').innerHTML=h.length? h.map(x=>'<div class="hist-item"><span class="hd">'+x.d+'</span><span>'+x.t+'</span></div>').join('') : '<div class="hist-item"><span class="muted">No prior touches.</span></div>';
+  $('histBox').classList.add('hidden');
+  $('histToggle').innerHTML='🕐 History ('+h.length+') ▾';
 }
 function resetDemo(){
   clearCallUI(); setProspect(0);
@@ -572,11 +621,12 @@ function logAndNext(){
   if(o==='booked') bump('s-book');
   advanceQueue();
 }
-function advanceQueue(){
+function advanceQueue(verb){
+  verb=verb||'Logged ✓';
   const nextName=PROSPECTS[(curProspect+1)%PROSPECTS.length].nm;
   clearCallUI(); setProspect(curProspect+1);
   const qn=$('s-queue'); qn.textContent=Math.max(0,parseInt(qn.textContent,10)-1);
-  toast('Logged ✓ · now on '+nextName);
+  toast(verb+' · now on '+nextName);
 }
 $('nextBtn').onclick=logAndNext;
 
@@ -589,6 +639,57 @@ document.addEventListener('keydown',e=>{
   if(map[e.key]){ selectOutcome(map[e.key]); e.preventDefault(); }
   else if(e.key==='Enter'){ logAndNext(); e.preventDefault(); }
 });
+
+/* ===== v1.2.0: voicemail drop, history, clickable CLOSER, editable BANT, manual notes, objection bank ===== */
+/* voicemail drop — one-click no-answer path (biggest volume multiplier on a big list) */
+$('vmBtn').onclick=()=>{ bump('s-dials'); advanceQueue('📩 VM dropped'); };
+
+/* pre-call history timeline */
+$('histToggle').onclick=()=>{ const b=$('histBox'); const hidden=b.classList.toggle('hidden');
+  $('histToggle').innerHTML='🕐 History ('+(PROSPECTS[curProspect].hist||[]).length+') '+(hidden?'▾':'▴'); };
+
+/* clickable CLOSER stage — manual advance when the rep wants to drive it */
+const CLOSER_STAGES=['Clarify','Label','Overview','Sell','Explain','Reinforce'];
+$('closer-stage').onclick=()=>{ const i=CLOSER_STAGES.indexOf($('closer-stage').textContent);
+  setCloser(CLOSER_STAGES[(i+1)%CLOSER_STAGES.length],'manual'); };
+
+/* tap-to-edit BANT — correct or fill what the AI heard */
+document.querySelectorAll('.bcell').forEach(cell=>{ cell.onclick=()=>{
+  const v=cell.querySelector('.v'); if(v.getAttribute('contenteditable')==='true') return;
+  if(v.textContent.trim()==='—') v.textContent='';
+  v.setAttribute('contenteditable','true'); v.focus();
+  v.onblur=()=>{ v.removeAttribute('contenteditable'); const t=v.textContent.trim();
+    if(!t){ v.textContent='—'; cell.className='bcell'; } else cell.classList.add('ok'); v.onblur=null; v.onkeydown=null; };
+  v.onkeydown=(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); v.blur(); } };
+}; });
+
+/* type-while-talking notes */
+$('noteInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const t=$('noteInput').value.trim(); if(t){ addNote(t); $('noteInput').value=''; } } });
+
+/* ===== searchable objection bank ===== */
+const OBJ_BANK=[
+ {q:"I need to talk to my partner first", a:"Totally — a decision like this should include your partner, I'd want the same.", r:"Dana at Liu Freight did exactly that — we got her partner on a 10-minute call, both saw the numbers, signed that week. Want me to set that up?"},
+ {q:"It's too expensive / I can't afford it", a:"I hear you — $500 plus $300 a month is real money.", r:"That's exactly why we start with your 3B report — most owners free up more than that in the first 90 days. It pays for itself before it costs you."},
+ {q:"I need to think about it", a:"Makes sense — you don't want to rush a decision like this.", r:"What specifically would you want to think through? Nine times out of ten I can answer it right now so you're not sitting on it all week."},
+ {q:"I'm too busy right now", a:"I get it — you're running the business, not sitting by the phone.", r:"That's the whole point of this — it's built to give you time back. Fifteen minutes now saves you hours a month."},
+ {q:"Just send me some information", a:"Happy to — I want you to have what you need.", r:"Info's only useful with context. Let's do the 3B call, I'll pull your real numbers live, and you'll see exactly how it fits — way better than a PDF."},
+ {q:"I've been burned before — does this actually work?", a:"Fair — a lot of people overpromise in this space.", r:"That's why we pull your real MyFICO 3-bureau report on the call. No hype — your actual numbers, your actual plan."},
+ {q:"Let me call you back", a:"Of course — I don't want to catch you at a bad time.", r:"Let's lock a specific slot so it doesn't slip — is tomorrow morning or afternoon better for you?"}
+];
+function renderObjBank(q){
+  q=(q||'').toLowerCase().trim();
+  const items=OBJ_BANK.filter(o=>!q || (o.q+' '+o.a+' '+o.r).toLowerCase().includes(q));
+  $('objBankBody').innerHTML = items.length
+    ? items.map(o=>'<div class="cl-entry"><div class="ob-q">“'+esc(o.q)+'”</div>'+
+        '<div class="ob-r"><span class="ob-t">1 · Agree</span>'+esc(o.a)+'</div>'+
+        '<div class="ob-r"><span class="ob-t">2 · Reframe + story</span>'+esc(o.r)+'</div></div>').join('')
+    : '<div class="cl-entry"><span class="muted">No match — try “price”, “partner”, “time”, “busy”…</span></div>';
+}
+function openObjBank(){ $('objSearch').value=''; renderObjBank(''); $('objModal').classList.remove('hidden'); setTimeout(()=>{try{$('objSearch').focus()}catch(e){}},50); }
+$('objBankBtn').onclick=openObjBank;
+$('objModalClose').onclick=()=>$('objModal').classList.add('hidden');
+$('objModal').onclick=(e)=>{ if(e.target===$('objModal')) $('objModal').classList.add('hidden'); };
+$('objSearch').oninput=()=>renderObjBank($('objSearch').value);
 
 /* ===== Interactive mode: type to talk to Renee (live AI) ===== */
 function esc(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
@@ -754,7 +855,7 @@ function updateMission(){
   gset('gc','bc','goalConn',parseInt($('s-conn').textContent,10),GOAL.conn);
   gset('gb','bb','goalBook',parseInt($('s-book').textContent,10),GOAL.book);
 }
-updateTiming(); setInterval(updateTiming,30000); updateMission();
+updateTiming(); setInterval(updateTiming,30000); updateMission(); setProspect(0);
 
 /* ===== prospect's-phone view ===== */
 function phMsg(html,cls){ const m=$('phMsgs'); if(!m)return; const e=m.querySelector('.ph-empty'); if(e)e.remove();
