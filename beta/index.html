@@ -206,6 +206,11 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 .hist-item .hd{color:var(--muted);min-width:52px;font-weight:600}
 .bcell{cursor:pointer}
 .bcell .v[contenteditable="true"]{outline:1px solid var(--accent);border-radius:4px;padding:0 3px;color:var(--text)}
+.bcell.bad{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.5)}
+.bcell.bad .k,.bcell.bad .v{color:#ffb1b1}
+.bant-menu{position:fixed;z-index:1100;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.55);padding:5px;min-width:176px}
+.bant-menu button{display:block;width:100%;text-align:left;padding:8px 11px;font-size:.8rem;border:none;background:transparent;color:var(--text);cursor:pointer;border-radius:7px}
+.bant-menu button:hover{background:var(--bg2)}
 #closer-stage{cursor:pointer}
 .note-input{width:100%;margin-top:9px;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.82rem}
 .note-input:focus{outline:none;border-color:var(--accent)}
@@ -310,22 +315,18 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
         <div id="histBox" class="hist-box hidden"></div>
       </div>
 
-      <!-- Signals & flags + BANT — above the closer -->
+      <!-- Signals & flags + BANT + live transcript — one box above the closer -->
       <div class="panel">
-        <div class="lbl">🏷️ Signals &amp; flags · ✅ BANT <span class="muted" style="text-transform:none;letter-spacing:0">· live from the call · tap BANT to edit · consent shows here too</span></div>
+        <div class="lbl">🏷️ Signals &amp; flags · ✅ BANT <span class="muted" style="text-transform:none;letter-spacing:0">· live from the call · tap BANT to prequalify · consent shows here too</span></div>
         <div id="chips" class="chips"><span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span></div>
         <div id="flagAlert"></div>
         <div class="bant" style="margin-top:9px">
-          <div class="bcell" id="b-budget"><div class="k">💰 Budget</div><div class="v">—</div></div>
-          <div class="bcell" id="b-auth"><div class="k">👤 Authority</div><div class="v">—</div></div>
-          <div class="bcell" id="b-need"><div class="k">🎯 Need</div><div class="v">—</div></div>
-          <div class="bcell" id="b-time"><div class="k">⏱️ Timeline</div><div class="v">—</div></div>
+          <div class="bcell" id="b-budget"><div class="k">💰 Budget ▾</div><div class="v">—</div></div>
+          <div class="bcell" id="b-auth"><div class="k">👤 Authority ▾</div><div class="v">—</div></div>
+          <div class="bcell" id="b-need"><div class="k">🎯 Need ▾</div><div class="v">—</div></div>
+          <div class="bcell" id="b-time"><div class="k">⏱️ Timeline ▾</div><div class="v">—</div></div>
         </div>
-      </div>
-
-      <!-- Live transcript — below signals & flags -->
-      <div class="panel">
-        <div class="lbl">🎙️ Live transcript <span class="muted" style="text-transform:none;letter-spacing:0">· what the AI is hearing</span></div>
+        <div class="lbl" style="margin-top:12px">🎙️ Live transcript <span class="muted" style="text-transform:none;letter-spacing:0">· what the AI is hearing</span></div>
         <div id="transcript" class="transcript"><span class="muted">—</span></div>
       </div>
 
@@ -478,6 +479,9 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
   </div>
 </div>
 
+<!-- BANT quick-prequalify dropdown (positioned under the tapped cell) -->
+<div id="bantMenu" class="bant-menu hidden"></div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -486,6 +490,10 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.9.0',d:'2026-06-30',n:[
+ "Live transcript folded into the Signals & flags box — one panel for everything the AI is picking up.",
+ "BANT is now tap-to-prequalify — tap any of Budget / Authority / Need / Timeline and pick from a quick dropdown (Comfortable / Tight / Can't afford, Sole DM / Needs partner, etc.). Still auto-fills from the call too.",
+]},
 {v:'1.8.0',d:'2026-06-30',n:[
  "Closing controls are now tap-to-open pop-ups — great on mobile. From the phone dock: 💳 Pay link opens the payment-tier picker (Monthly / Annual / Pro), 📅 Booking opens the 2-week calendar, and 📹 Video opens a Zoom-or-FaceTime choice before texting the invite.",
  "Payment lives on the phone now — tap 💳 Pay link to pick the tier and send. Removed the separate payment box from the cockpit.",
@@ -859,7 +867,7 @@ $('nextBtn').onclick=logAndNext;
 
 /* ===== keyboard-first: 1–4 pick outcome, ↵ log & advance (ignored while typing) ===== */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ closeChangelog(); $('objModal').classList.add('hidden'); closePops(); try{hideConfirm();}catch(e){} return; }
+  if(e.key==='Escape'){ closeChangelog(); $('objModal').classList.add('hidden'); closePops(); try{hideConfirm();}catch(e){} try{closeBantMenu();}catch(e){} return; }
   const el=document.activeElement;
   if(el && (el.id==='chatInput' || el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.isContentEditable)) return;
   if(e.metaKey||e.ctrlKey||e.altKey) return;
@@ -886,15 +894,29 @@ const CLOSER_STAGES=['Clarify','Label','Overview','Sell','Explain','Reinforce'];
 $('closer-stage').onclick=()=>{ const i=CLOSER_STAGES.indexOf($('closer-stage').textContent);
   setCloser(CLOSER_STAGES[(i+1)%CLOSER_STAGES.length],'manual'); };
 
-/* tap-to-edit BANT — correct or fill what the AI heard */
-document.querySelectorAll('.bcell').forEach(cell=>{ cell.onclick=()=>{
-  const v=cell.querySelector('.v'); if(v.getAttribute('contenteditable')==='true') return;
-  if(v.textContent.trim()==='—') v.textContent='';
-  v.setAttribute('contenteditable','true'); v.focus();
-  v.onblur=()=>{ v.removeAttribute('contenteditable'); const t=v.textContent.trim();
-    if(!t){ v.textContent='—'; cell.className='bcell'; } else cell.classList.add('ok'); v.onblur=null; v.onkeydown=null; };
-  v.onkeydown=(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); v.blur(); } };
-}; });
+/* tap-to-prequalify BANT — a quick dropdown of standard options per criterion (still auto-fills from the call) */
+const BANT_OPTS={
+ 'b-budget':[['✅ Comfortable','ok'],['👍 Can swing it','ok'],['⚠️ Tight','warn'],['❌ Can’t afford base','bad']],
+ 'b-auth':[['✅ Sole decision-maker','ok'],['⚠️ Needs partner/spouse','warn'],['⚠️ Needs boss/board','warn'],['❓ Unclear','warn']],
+ 'b-need':[['🔥 Strong / urgent','ok'],['👍 Moderate','ok'],['😐 Nice-to-have','warn'],['❌ No real need','bad']],
+ 'b-time':[['⚡ This month','ok'],['📆 This quarter','ok'],['🕓 Later / someday','warn'],['❌ No timeline','bad']]
+};
+function closeBantMenu(){ var m=$('bantMenu'); if(m) m.classList.add('hidden'); }
+function openBantMenu(cellId){
+  const cell=$(cellId), opts=BANT_OPTS[cellId]||[], menu=$('bantMenu');
+  menu.innerHTML=opts.map((o,i)=>'<button data-i="'+i+'">'+o[0]+'</button>').join('')+'<button data-i="clear" style="color:var(--text2)">— clear</button>';
+  const r=cell.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(r.left, window.innerWidth-186))+'px';
+  menu.style.top=(r.bottom+4)+'px';
+  menu.classList.remove('hidden');
+  menu.querySelectorAll('button').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); var i=b.getAttribute('data-i');
+    if(i==='clear'){ cell.className='bcell'; cell.querySelector('.v').textContent='—'; }
+    else { var o=opts[parseInt(i,10)]; setBant(cellId,o[0],o[1]); }
+    closeBantMenu(); });
+}
+document.querySelectorAll('.bcell').forEach(cell=>{ cell.onclick=(e)=>{ e.stopPropagation(); openBantMenu(cell.id); }; });
+document.addEventListener('click',()=>{ var m=$('bantMenu'); if(m && !m.classList.contains('hidden')) closeBantMenu(); });
+window.addEventListener('scroll',closeBantMenu,true);
 
 /* type-while-talking notes */
 $('noteInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const t=$('noteInput').value.trim(); if(t){ addNote(t); $('noteInput').value=''; } } });
