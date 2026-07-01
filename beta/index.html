@@ -248,6 +248,8 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
       <div class="stat"><b id="s-dials">22</b><span>dials</span></div>
       <div class="stat"><b id="s-conn" style="color:var(--accent)">7</b><span>connects</span></div>
       <div class="stat"><b id="s-book" style="color:var(--accent)">2</b><span>booked</span></div>
+      <div class="stat"><b id="s-closed" style="color:var(--accent)">1</b><span>closed</span></div>
+      <div class="stat"><b id="s-rev" style="color:var(--gold)">$3.5k</b><span>revenue</span></div>
       <div class="stat"><b id="s-queue">41</b><span>queue</span></div>
     </div>
   </header>
@@ -426,6 +428,9 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.7.0',d:'2026-06-30',n:[
+ "The top momentum bar now shows Closed deals and Revenue collected — when a payment clears, both tick up by the plan you sold (Monthly +$800, Annual +$3,500, Pro +$9,700).",
+]},
 {v:'1.6.0',d:'2026-06-30',n:[
  "Cockpit reflow: signals & flags and the live transcript now sit above the CLOSER box, your live-note field moved inside the CLOSER, Close-the-deal moved up, and the outcome buttons are at the very bottom.",
  "Book from a real calendar — pick any weekday in the next 2 weeks, then a time, for either 3B booking path.",
@@ -479,7 +484,9 @@ function openChangelog(){ renderChangelog(); $('clModal').classList.remove('hidd
   var v=$('ver'); if(v) v.classList.remove('ver-new'); }
 function closeChangelog(){ $('clModal').classList.add('hidden'); }
 let muted=false, voice=null, started=false, curAudio=null, runToken=0;
-let heardSignals=[], nqReason='';
+let heardSignals=[], nqReason='', revenue=3500;
+function fmtRev(n){ return n>=1000 ? '$'+(n/1000).toFixed(1).replace(/\.0$/,'')+'k' : '$'+n; }
+function updateRev(){ var e=$('s-rev'); if(e) e.textContent=fmtRev(revenue); }
 let currentFocus='all', curId=null, curTz='America/New_York', curTzL='ET', hawaiiOnly=false;
 
 /* the book of business — each prospect carries its segments + local time + caller ID */
@@ -741,6 +748,7 @@ $('hiToggle').onchange=()=>{ hawaiiOnly=$('hiToggle').checked; curId=null; setFo
   toast(hawaiiOnly?'🌺 Hawaii only — one-party consent, no disclosure needed':'Showing all states'); };
 function resetDemo(){
   $('s-dials').textContent='22'; $('s-conn').textContent='7'; $('s-book').textContent='2'; $('s-queue').textContent='41';
+  $('s-closed').textContent='1'; revenue=3500; updateRev();
   ['goalDials','goalConn','goalBook'].forEach(function(id){$(id).classList.remove('done')});
   curId=null; setFocus('all', true);
   try{ updateMission(); }catch(e){}
@@ -1005,9 +1013,9 @@ renderCalDates();
 
 /* payment plans — rep picks the tier before sending the link */
 const PLANS={
-  monthly:{label:'Monthly', desc:'EPIC LIFE · <b>$500 setup + $300/mo</b>', short:'$500 setup + $300/mo', link:'pay.tla.co/r/epic-mo'},
-  annual:{label:'Annual', desc:'EPIC LIFE Annual · <b>$500 setup + $3,000/yr</b>', short:'$500 setup + $3,000/yr', link:'pay.tla.co/r/epic-yr'},
-  pro:{label:'Pro', desc:'EPIC LIFE Pro · <b>$9,700/yr</b>', short:'$9,700/yr', link:'pay.tla.co/r/epic-pro'}
+  monthly:{label:'Monthly', desc:'EPIC LIFE · <b>$500 setup + $300/mo</b>', short:'$500 setup + $300/mo', link:'pay.tla.co/r/epic-mo', collect:800},
+  annual:{label:'Annual', desc:'EPIC LIFE Annual · <b>$500 setup + $3,000/yr</b>', short:'$500 setup + $3,000/yr', link:'pay.tla.co/r/epic-yr', collect:3500},
+  pro:{label:'Pro', desc:'EPIC LIFE Pro · <b>$9,700/yr</b>', short:'$9,700/yr', link:'pay.tla.co/r/epic-pro', collect:9700}
 };
 let curPlan='monthly';
 function setPlan(p){ curPlan=p; document.querySelectorAll('#planChips .plan').forEach(b=>b.classList.toggle('sel',b.dataset.p===p)); $('planDesc').innerHTML=PLANS[p].desc; }
@@ -1024,6 +1032,7 @@ async function sendPaymentLink(){
   await wait(2000); setPay('✅ Paid — '+pl.short+' ('+pl.label+')','ok');
   phMsg('<span class="ttl">Payment received ✅</span>Welcome to EPIC LIFE '+pl.label+' — '+pl.short+'.','ok');
   toast('Payment received 🎉'); bump('s-book');
+  $('s-closed').textContent=parseInt($('s-closed').textContent,10)+1; revenue+=pl.collect; updateRev();
   try{ setBkMode('closed'); }catch(e){}
 }
 $('payBtn').onclick=sendPaymentLink;
