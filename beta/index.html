@@ -157,6 +157,8 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 .hidden{display:none}
 /* ===== What's new / changelog ===== */
 #ver{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+#ver.ver-new{color:#7ff0c8;text-decoration:none;background:rgba(16,185,129,.16);padding:2px 9px;border-radius:999px;font-weight:700;animation:pulseNew 1.7s ease-in-out infinite}
+@keyframes pulseNew{0%,100%{opacity:1}50%{opacity:.5}}
 .cl-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
 .cl-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:520px;width:100%;max-height:82vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.5)}
 .cl-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
@@ -391,7 +393,9 @@ function renderChangelog(){
     '<div class="cl-entry"><span class="cl-v">v'+p.v+'</span><span class="cl-d">'+p.d+'</span><ul>'+
     p.n.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
 }
-function openChangelog(){ renderChangelog(); $('clModal').classList.remove('hidden'); }
+function openChangelog(){ renderChangelog(); $('clModal').classList.remove('hidden');
+  try{ localStorage.setItem('cockpit_seen_v',APP_VERSION); }catch(e){}
+  var v=$('ver'); if(v) v.classList.remove('ver-new'); }
 function closeChangelog(){ $('clModal').classList.add('hidden'); }
 let muted=false, voice=null, started=false, curAudio=null, runToken=0;
 let heardSignals=[], nqReason='', curProspect=0;
@@ -632,6 +636,7 @@ $('nextBtn').onclick=logAndNext;
 
 /* ===== keyboard-first: 1–4 pick outcome, ↵ log & advance (ignored while typing) ===== */
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeChangelog(); $('objModal').classList.add('hidden'); return; }
   const el=document.activeElement;
   if(el && (el.id==='chatInput' || el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.isContentEditable)) return;
   if(e.metaKey||e.ctrlKey||e.altKey) return;
@@ -892,7 +897,8 @@ $('ver').textContent='v'+APP_VERSION+" · what's new";
 $('ver').onclick=openChangelog;
 $('clClose').onclick=closeChangelog;
 $('clModal').onclick=(e)=>{ if(e.target===$('clModal')) closeChangelog(); };
-try{ if(localStorage.getItem('cockpit_seen_v')!==APP_VERSION){ openChangelog(); localStorage.setItem('cockpit_seen_v',APP_VERSION); } }catch(e){}
+/* Non-blocking new-build notice: highlight the version link + a quick toast — never auto-open a modal over the cockpit */
+try{ if(localStorage.getItem('cockpit_seen_v')!==APP_VERSION){ $('ver').classList.add('ver-new'); setTimeout(()=>toast("🆕 What's new in v"+APP_VERSION+" — tap the version below"),700); } }catch(e){}
 </script>
 </body>
 </html>
