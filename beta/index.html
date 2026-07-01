@@ -80,7 +80,16 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
 #updbar{position:fixed;top:0;left:0;right:0;z-index:999;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 14px;font-size:.85rem;font-weight:600;box-shadow:0 2px 12px rgba(0,0,0,.45)}
 #updbar button{background:#fff;color:var(--blue);border:none;border-radius:6px;padding:6px 14px;font-weight:800;cursor:pointer}
 #updbar .x{cursor:pointer;opacity:.75;font-weight:400;font-size:1.1rem}
-body{padding-bottom:104px}
+body{padding-bottom:86px}
+@media(max-width:600px){body{padding-bottom:132px}}
+#bantBar{position:fixed;left:0;right:0;bottom:0;z-index:900;background:var(--bg2);border-top:1px solid var(--border);box-shadow:0 -4px 18px rgba(0,0,0,.5);padding:8px 12px}
+.bb-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;gap:8px;align-items:stretch}
+.bb-lbl{align-self:center;font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2)}
+@media(max-width:600px){.bb-inner{grid-template-columns:1fr 1fr}.bb-lbl{display:none}}
+.ph-compose .ph-cbtn{padding:8px 9px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.9rem;line-height:1;flex:0 0 auto}
+.ph-compose .ph-cbtn:hover{border-color:var(--accent)}
+.ph-compose .ph-cbtn.on{background:rgba(239,68,68,.22);border-color:var(--red)}
+.ph-compose .ph-cbtn.ready{border-color:var(--accent);color:#7ff0c8}
 #chatbar{position:fixed;left:0;right:0;bottom:0;z-index:900;background:var(--bg2);border-top:1px solid var(--border);padding:9px 14px 11px;box-shadow:0 -4px 18px rgba(0,0,0,.5)}
 #chatbar #aiStatus{max-width:1080px;margin:0 auto 6px;font-size:.72rem}
 #chatbar .inner{max-width:1080px;margin:0 auto;display:flex;gap:9px;align-items:center}
@@ -348,15 +357,9 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 
       <!-- Signals & flags + BANT + live transcript — one box above the closer -->
       <div class="panel">
-        <div class="lbl">🏷️ Signals &amp; flags · ✅ BANT <span class="muted" style="text-transform:none;letter-spacing:0">· live from the call · tap BANT to prequalify · consent shows here too</span></div>
+        <div class="lbl">🏷️ Signals &amp; flags <span class="muted" style="text-transform:none;letter-spacing:0">· live from the call · consent shows here too · BANT pinned below ↓</span></div>
         <div id="chips" class="chips"><span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span></div>
         <div id="flagAlert"></div>
-        <div class="bant" style="margin-top:9px">
-          <div class="bcell" id="b-budget"><div class="k">💰 Budget ▾</div><div class="v">—</div></div>
-          <div class="bcell" id="b-auth"><div class="k">👤 Authority ▾</div><div class="v">—</div></div>
-          <div class="bcell" id="b-need"><div class="k">🎯 Need ▾</div><div class="v">—</div></div>
-          <div class="bcell" id="b-time"><div class="k">⏱️ Timeline ▾</div><div class="v">—</div></div>
-        </div>
         <div class="lbl" style="margin-top:12px">🎙️ Live transcript <span class="muted" style="text-transform:none;letter-spacing:0">· what the AI is hearing</span></div>
         <div id="transcript" class="transcript"><span class="muted">—</span></div>
       </div>
@@ -416,6 +419,8 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
           <button data-q="zoom" title="Video call — Zoom or Microsoft Teams">🎥 Zoom <kbd>Z</kbd></button>
         </div>
         <div class="ph-compose">
+          <button id="phKey" class="ph-cbtn" title="Connect the AI prospect (paste your key)">🔑</button>
+          <button id="phMic" class="ph-cbtn" title="Talk to the prospect with your mic">🎤</button>
           <input id="phInput" type="text" placeholder="Text the prospect…" autocomplete="off">
           <button id="phSend" title="Send">➤</button>
         </div>
@@ -426,7 +431,19 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
   <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI. <span id="ver" class="muted">v1.1.0</span></div>
 </div>
 
-<div id="chatbar">
+<!-- floating BANT card (pinned bottom) -->
+<div id="bantBar">
+  <div class="bb-inner">
+    <span class="bb-lbl">✅ BANT</span>
+    <div class="bcell" id="b-budget"><div class="k">💰 Budget ▾</div><div class="v">—</div></div>
+    <div class="bcell" id="b-auth"><div class="k">👤 Authority ▾</div><div class="v">—</div></div>
+    <div class="bcell" id="b-need"><div class="k">🎯 Need ▾</div><div class="v">—</div></div>
+    <div class="bcell" id="b-time"><div class="k">⏱️ Timeline ▾</div><div class="v">—</div></div>
+  </div>
+</div>
+
+<!-- AI-tester controls now live on the phone; this stays hidden for wiring -->
+<div id="chatbar" style="display:none">
   <div id="aiStatus" class="muted"></div>
   <div class="inner">
     <button id="keyBtn" class="kb" title="Connect AI prospect">🔑</button>
@@ -537,6 +554,10 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.14.0',d:'2026-06-30',n:[
+ "Removed the bottom chat bar and pinned a floating BANT card there instead — Budget / Authority / Need / Timeline stay visible while you scroll, and you can tap any to prequalify (the dropdown opens upward).",
+ "The AI 🔑 connect and 🎤 mic moved onto the phone's message row, next to the text box.",
+]},
 {v:'1.13.0',d:'2026-06-30',n:[
  "Close-the-deal is now a live decision layer, not just launchers. It reads the call and shows: the recommended plan for THIS prospect (with the inclusions that matter to them), a green/amber/red readiness check (BANT filled? can they afford it? any hard flag?), an assumptive closing line to say, and one primary action — Take payment, Book the 3B call, or Mark not qualified — that updates as the call develops.",
 ]},
@@ -977,8 +998,10 @@ function openBantMenu(cellId){
   menu.innerHTML=opts.map((o,i)=>'<button data-i="'+i+'">'+o[0]+'</button>').join('')+'<button data-i="clear" style="color:var(--text2)">— clear</button>';
   const r=cell.getBoundingClientRect();
   menu.style.left=Math.max(8,Math.min(r.left, window.innerWidth-186))+'px';
-  menu.style.top=(r.bottom+4)+'px';
-  menu.classList.remove('hidden');
+  menu.style.top='0px'; menu.classList.remove('hidden');
+  var mh=menu.offsetHeight, top=r.bottom+4;
+  if(top+mh>window.innerHeight-6) top=Math.max(6, r.top-mh-4); // flip above (pinned BANT bar)
+  menu.style.top=top+'px';
   menu.querySelectorAll('button').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); var i=b.getAttribute('data-i');
     if(i==='clear'){ cell.className='bcell'; cell.querySelector('.v').textContent='—'; }
     else { var o=opts[parseInt(i,10)]; setBant(cellId,o[0],o[1]); }
@@ -1138,8 +1161,14 @@ function toggleMic(){
   if(micOn){ micPaused=false; try{recog.start();}catch(e){} b.classList.add('on'); b.textContent='🔴';
     $('status').className='pill live'; $('status').innerHTML='🎙️ listening (mic)'; phOnCall(); toast('Mic on — talk to Renee'); }
   else { try{recog.stop();}catch(e){} b.classList.remove('on'); b.textContent='🎤'; toast('Mic off'); }
+  var pm=$('phMic'); if(pm){ pm.classList.toggle('on',micOn); pm.textContent=micOn?'🔴':'🎤'; }
 }
 $('micBtn').onclick=toggleMic;
+/* AI key + mic now live on the phone's compose row (chatbar is hidden) */
+function updatePhKey(){ var k=$('phKey'); if(k) k.classList.toggle('ready', !!getKey()); }
+$('phKey').onclick=()=>{ $('keyBtn').click(); updatePhKey(); };
+$('phMic').onclick=()=>$('micBtn').click();
+updatePhKey();
 setAiStatus();
 /* only grab the chat input when the live-AI tester is connected — otherwise leave
    focus free so the 1–4 / ↵ keyboard loop works for the scripted demo */
