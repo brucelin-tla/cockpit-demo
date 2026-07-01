@@ -1,5 +1,13 @@
 # Cockpit demo — changelog (newest first)
 
+- **1.16.0** — Big release (promoted from beta). The cockpit is now a full closing workstation:
+  focus-driven queue (Hot/New/Callbacks/Follow-ups/Overdue + Hawaii-only), a working **rep phone**
+  (call timer, two-way AI texting, quick-send dock: 💳 Pay / 📅 Booking / 📎 Content / 🎥 Zoom+Teams,
+  mute + drop-VM, confirm-before-text), **real EPIC LIFE pricing + inclusions** with a pitch-deck pay
+  popup that recommends the right tier, **calendar booking** (2-week grid) + **Schedule callback**,
+  **email templates** on the contact card (proposal / event invite / play-the-game), a **CLOSER
+  co-pilot** that suggests your next line + advances the stage from your notes, the **BANK personality**
+  close card, closed-deals + revenue on the momentum bar, and a movable/collapsible floating BANT card.
 - **1.1.0** — Live-call redesign: **SAY THIS** band up top (AI's suggested line + objection rebuttal, always front-and-center), Signals + BANT merged into one always-visible strip, **keyboard-first log→next** (press 1–4 then Enter to log and auto-advance the queue), and "Not qualified" pre-fills its reason from the signals actually heard. Added an in-app **"What's new"** changelog that auto-opens on each new build.
 - **1.0.9** - Renamed the tool to **EPIC Closer** (was Sales Cockpit); landing menu + all builds updated.
 - **1.0.8** — Wired the End button = stop everything + full reset, so the demo restarts cleanly.
