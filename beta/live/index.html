@@ -617,6 +617,9 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.21.0',d:'2026-07-02',n:[
+ "Commission system + leaderboards. Each closed membership's $500 setup splits: $100 lead gen (referral partner, or TLA if ads-sourced), $100 BDR booking, $100 closer for the 3B, $200 closer for the membership. Every role now sees its own leaderboard + earnings, and the admin dashboard shows the full commission breakdown per deal.",
+]},
 {v:'1.20.0',d:'2026-07-02',n:[
  "Beta is now a full parallel build of the entire EPIC Suite — the 🧪 chip takes you into a complete beta version of every tool (hub, Closer, Setter, Referral, Client Success) and back to Live in one tap.",
 ]},
@@ -1751,6 +1754,17 @@ body{padding-top:46px}
   m.addEventListener('click',function(e){ if(e.target===m) hide(); });
   m.querySelector('#epicSuggCancel').onclick=hide; m.querySelector('#epicSuggSend').onclick=send;
 })();
+</script>
+
+<!-- role leaderboard + your commission (demo) -->
+<script>
+(function(){var w=document.querySelector('.wrap');if(!w)return;
+var TITLE='🏆 Top closers — commission this month';
+var YOU='You (Ana): $1,200 earned · $300 per closed deal ($100 3B booked + $200 membership)';
+var B=[{n:'Ana Vega (Sr)',s:'4 closed',p:'$1,200'},{n:'Devin Lu',s:'3 closed',p:'$900'}];
+var p=document.createElement('div');p.className='panel';p.style.marginTop='12px';
+p.innerHTML='<div class="lbl">'+TITLE+'</div>'+B.map(function(l,i){return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="width:20px;height:20px;border-radius:50%;'+(i===0?'background:rgba(245,158,11,.2);color:var(--gold)':'background:var(--bg2);color:var(--text2)')+';display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800">'+(i+1)+'</span><div style="flex:1;min-width:0"><b style="font-size:.85rem">'+l.n+'</b> <span style="font-size:.66rem;color:var(--text2)">· '+l.s+'</span></div><span style="font-weight:800;color:#7ff0c8">'+l.p+'</span></div>';}).join('')+'<div style="margin-top:9px;font-size:.76rem;color:var(--gold);font-weight:700">'+YOU+'</div>';
+w.appendChild(p);})();
 </script>
 </body>
 </html>
