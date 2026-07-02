@@ -37,37 +37,92 @@ h1{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,var(--acce
   <h1>EPIC Suite</h1>
   <p class="tag">Team Life Academy — one workspace per role, one funnel end-to-end</p>
   <div class="cards">
-    <a class="card closer" href="live/">
-      <span class="live">🟢 Live</span>
-      <div class="role">Closer</div>
-      <div class="vt">📞 EPIC Closer</div>
-      <p>Live AI calling co-pilot — work the ranked queue, get the next line, qualify, handle objections, and close on the call.</p>
-      <div class="go">Open Closer →</div>
+    <a class="card ref" id="card-ref" href="referral/">
+      <div class="role">Referral Partner</div>
+      <div class="vt">🤝 EPIC Referral Partner</div>
+      <p>Refer the people you care about — warm ones go straight to a closer, cold ones to a setter — and earn referral points as they win.</p>
+      <div class="go">Open Referral →</div>
     </a>
-    <a class="card setter" href="setter/">
+    <a class="card setter" id="card-setter" href="setter/">
       <div class="role">BDR / Setter</div>
       <div class="vt">🎯 EPIC Setter</div>
       <p>Dial the lead list, quick-qualify who's worth a closer's time, and book the strategy appointment straight onto a closer's calendar.</p>
       <div class="go">Open Setter →</div>
     </a>
-    <a class="card ref" href="referral/">
-      <div class="role">Member</div>
-      <div class="vt">🤝 Referral Partner</div>
-      <p>Refer the people you care about — warm ones go straight to a closer, cold ones to a setter — and earn referral points as they win.</p>
-      <div class="go">Open Referral →</div>
+    <a class="card closer" id="card-closer" href="live/">
+      <span class="live" id="closerBadge">🟢 Live</span>
+      <div class="role">Closer</div>
+      <div class="vt">📞 EPIC Closer</div>
+      <p>Live AI calling co-pilot — work the ranked queue, get the next line, qualify, handle objections, and close on the call.</p>
+      <div class="go">Open Closer →</div>
     </a>
-    <a class="card cs" href="success/">
+    <a class="card cs" id="card-cs" href="success/">
       <div class="role">Client Success</div>
       <div class="vt">🌟 EPIC Client Success</div>
       <p>Run the 15-min MyFICO 3-bureau call, onboard members into the EPIC LIFE portal, and loop in the closer on the demo Zoom.</p>
       <div class="go">Open Client Success →</div>
     </a>
   </div>
-  <a class="beta" href="beta/">🧪 EPIC Closer — beta build</a>
   <div class="foot">
     The EPIC funnel:
-    <div class="flow"><b>Referral / lead</b> → 🎯 <b>Setter</b> books → 📞 <b>Closer</b> closes → 🌟 <b>Client Success</b> onboards</div>
+    <div class="flow"><b>Referral Partner</b> refers → 🎯 <b>BDR / Setter</b> books → 📞 <b>Closer</b> closes → 🌟 <b>Client Success</b> onboards</div>
   </div>
 </div>
+
+<!-- ===== EPIC Suite: beta toggle chip + routing (self-contained) ===== -->
+<style>
+#epicChip{position:fixed;top:12px;right:14px;z-index:1200;display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);box-shadow:0 2px 10px rgba(0,0,0,.4);user-select:none;white-space:nowrap}
+#epicChip:hover{border-color:var(--accent);color:var(--text)}
+#epicChip.beta{background:rgba(245,158,11,.18);border-color:var(--gold);color:#ffd58a;animation:epicPulse 2s ease-in-out infinite}
+@keyframes epicPulse{0%,100%{opacity:1}50%{opacity:.6}}
+.card .live.betabadge{background:rgba(245,158,11,.16);color:#ffd58a}
+.epic-modal{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.epic-modal.hidden{display:none}
+.epic-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:left}
+.epic-box h3{font-size:1.05rem;margin-bottom:6px}
+.epic-box p{font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.epic-box input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:1rem;letter-spacing:2px;text-align:center;text-transform:uppercase}
+.epic-box input:focus{outline:none;border-color:var(--gold)}
+.epic-err{color:var(--red);font-size:.76rem;margin-top:8px;min-height:16px;text-align:center}
+.epic-row{display:flex;gap:8px;margin-top:14px}
+.epic-row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:800;font-size:.85rem;cursor:pointer}
+.epic-go{background:var(--gold);color:#1a1200}.epic-cancel{background:var(--surface2);color:var(--text)}
+</style>
+<script>
+(function(){
+  var CODE='EPICBETA', KEY='epic_mode';
+  var E=window.EPIC=window.EPIC||{};
+  E.isBeta=function(){try{return localStorage.getItem(KEY)==='beta'}catch(e){return false}};
+  function setMode(x){try{localStorage.setItem(KEY,x)}catch(e){}}
+  // ---- route the Closer card + tag to the current mode ----
+  function applyMode(){
+    var beta=E.isBeta();
+    var c=document.getElementById('card-closer'); if(c) c.setAttribute('href', beta?'beta/':'live/');
+    var b=document.getElementById('closerBadge');
+    if(b){ b.textContent=beta?'🧪 Beta':'🟢 Live'; b.classList.toggle('betabadge',beta); }
+    var t=document.querySelector('.tag');
+    if(t){ t.innerHTML=beta
+      ? "Team Life Academy — 🧪 <b style=\"color:#ffd58a\">beta preview</b> across the suite · tap the chip to return to Live"
+      : "Team Life Academy — one workspace per role, one funnel end-to-end"; }
+  }
+  applyMode();
+  // ---- corner chip ----
+  var chip=document.createElement('div'); chip.id='epicChip';
+  function paint(){ if(E.isBeta()){chip.className='beta';chip.textContent='🧪 BETA · back to Live';chip.title="You're previewing the beta suite — tap to return to Live";}
+    else{chip.className='';chip.textContent='🟢 Live · try beta';chip.title='Tap to enter the beta preview (code required)';} }
+  paint();
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>🧪 Try the beta</h3><p>Enter your beta code to preview the newest in-progress build across the EPIC Suite. Switch back to Live anytime from the chip in the corner.</p><input id="epicCodeIn" placeholder="beta code" autocomplete="off" spellcheck="false"><div class="epic-err" id="epicErr"></div><div class="epic-row"><button class="epic-cancel" id="epicCancel">Cancel</button><button class="epic-go" id="epicGo">Unlock beta</button></div></div>';
+  function showM(){m.classList.remove('hidden');var i=m.querySelector('#epicCodeIn');i.value='';m.querySelector('#epicErr').textContent='';setTimeout(function(){i.focus()},30);}
+  function hideM(){m.classList.add('hidden');}
+  function submitM(){var v=(m.querySelector('#epicCodeIn').value||'').trim().toUpperCase();
+    if(v===CODE){setMode('beta');location.reload();}else{m.querySelector('#epicErr').textContent="That code didn't match. Try again.";}}
+  chip.onclick=function(){ if(E.isBeta()){setMode('live');location.reload();} else {showM();} };
+  document.body.appendChild(chip); document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m)hideM();});
+  m.querySelector('#epicCancel').onclick=hideM; m.querySelector('#epicGo').onclick=submitM;
+  m.querySelector('#epicCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')submitM();});
+})();
+</script>
 </body>
 </html>

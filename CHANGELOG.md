@@ -1,5 +1,11 @@
-# Cockpit demo — changelog (newest first)
+# EPIC Suite — changelog (newest first)
 
+- **1.19.0** — EPIC Suite promote. **🧪 Beta toggle** across the whole suite (top-right chip: Live ⇄ Beta,
+  code-gated, remembered per browser; hub routes the Closer card to the right build). **💡 Suggestion box
+  (Beta only)** on every role tool → writes to Supabase for central review. **Per-role What's-new** badges on
+  Setter / Referral Partner / Client Success. Closer promoted 1.16.0 → **1.19.0** (brings in 1.17–1.19: auto-select
+  outcome, auto-read BANK personality, header version badge + movable BANT dock, email templates, etc.). Renamed
+  off "cockpit" (repo/URL → **epic-suite**; source file → `closer.html`). Hub order: Referral → Setter → Closer → Client Success.
 - **1.16.0** — Big release (promoted from beta). The cockpit is now a full closing workstation:
   focus-driven queue (Hot/New/Callbacks/Follow-ups/Overdue + Hawaii-only), a working **rep phone**
   (call timer, two-way AI texting, quick-send dock: 💳 Pay / 📅 Booking / 📎 Content / 🎥 Zoom+Teams,

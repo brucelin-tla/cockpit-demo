@@ -322,6 +322,7 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 .bank-name{font-weight:800;font-size:1rem;margin-bottom:6px}
 .bank-drive,.bank-pitch{font-size:.8rem;color:var(--text2);line-height:1.5;margin-bottom:5px}
 .bank-drive b,.bank-pitch b{color:var(--text)}
+.bank-auto{font-size:.72rem;font-weight:700;color:#7ff0c8;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.35);border-radius:7px;padding:5px 9px;margin-bottom:8px}
 .mini-cta:hover{border-color:var(--accent)}
 .vid-choices{display:flex;gap:9px}
 .vidbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;font-weight:700;font-size:.92rem}
@@ -336,7 +337,8 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
   <header>
     <div class="brand"><span style="font-size:1.3rem">📞</span><h1>EPIC Closer</h1>
       <span id="status" class="pill idle">● idle</span>
-      <span id="ver" class="ver-badge muted">v…</span></div>
+      <span id="ver" class="ver-badge muted">v…</span>
+      <button type="button" id="epicSuggBtn" class="epic-sugg-btn" style="display:none">💡 Suggest</button></div>
     <div class="stats">
       <div class="stat"><b id="s-dials">22</b><span>dials</span></div>
       <div class="stat"><b id="s-conn" style="color:var(--accent)">7</b><span>connects</span></div>
@@ -426,12 +428,14 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
 
       <!-- End-of-call action bar — at the end of the page -->
       <div class="panel actionbar">
-        <div class="lbl">Outcome <span class="muted" style="text-transform:none;letter-spacing:0">· press 1–4 to pick, ↵ to log &amp; jump to the next prospect</span></div>
+        <div class="lbl">Outcome <span class="muted" style="text-transform:none;letter-spacing:0">· auto-reads from the call · press 1–6 to change, ↵ to log &amp; jump to the next prospect</span></div>
         <div class="disp" id="disp">
-          <div class="opt" data-o="booked"><kbd>1</kbd> 📅 Booked</div>
-          <div class="opt" data-o="callback"><kbd>2</kbd> 🔁 Callback</div>
-          <div class="opt" data-o="connected"><kbd>3</kbd> ✅ Connected</div>
-          <div class="opt" data-o="nq"><kbd>4</kbd> 🚫 Not qualified ▾</div>
+          <div class="opt" data-o="won"><kbd>1</kbd> 🏆 Won</div>
+          <div class="opt" data-o="booked"><kbd>2</kbd> 📅 Booked</div>
+          <div class="opt" data-o="callback"><kbd>3</kbd> 🔁 Callback</div>
+          <div class="opt" data-o="connected"><kbd>4</kbd> ✅ Connected</div>
+          <div class="opt" data-o="notint"><kbd>5</kbd> 🙅 Not interested</div>
+          <div class="opt" data-o="nq"><kbd>6</kbd> 🚫 Not qualified ▾</div>
           <button id="nextBtn" class="btn primary" style="margin-left:auto">Log &amp; Next<kbd>↵</kbd></button>
         </div>
         <div id="nqReasons" class="nq-reasons hidden"></div>
@@ -611,6 +615,18 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.19.0',d:'2026-07-02',n:[
+ "🧪 Beta preview across the whole EPIC Suite — a chip in the top-right corner flips you between the stable Live build and the newest Beta. Enter the beta code once to try Beta; tap the chip anytime to return to Live.",
+ "💡 Suggestion box (Beta only) — while you're in Beta, a “💡 Suggest” button in the header sends your ideas or bugs straight to Bruce for review.",
+ "The suite moved to a cleaner address — brucelin-tla.github.io/epic-suite (old links redirect).",
+]},
+{v:'1.18.0',d:'2026-06-30',n:[
+ "The outcome now auto-selects from the call — it reads the conversation and sets 🏆 Won (on payment) / 📅 Booked (on a booking) / 🔁 Callback / ✅ Connected / 🙅 Not interested / 🚫 Not qualified (hard flag or can't-afford). Tap 1–6 anytime to override.",
+ "Two new outcomes: 🏆 Won (paid deal, distinct from a booked appointment) and 🙅 Not interested (they qualify but declined, distinct from Not qualified).",
+]},
+{v:'1.17.0',d:'2026-06-30',n:[
+ "The BANK personality on the Close-the-deal card now auto-reads from the conversation — as the prospect talks, it detects whether they're 🔵 Blueprint / 🔴 Action / 🟢 Nurturing / 🟡 Knowledge and highlights it (AI-refined when your 🔑 key is connected). You can still tap any type to override.",
+]},
 {v:'1.16.0',d:'2026-06-30',n:[
  "The version / “what's new” badge moved up to the header (next to the title) so it's easy to spot.",
  "You can move the floating BANT card now — tap ⬅ to dock it to the left side or ⬇ back to the bottom, and ▾ (or the BANT label) to collapse it out of the way. Your choice is remembered.",
@@ -793,8 +809,9 @@ function addTranscript(who,txt){
   const t=$('transcript'); if(t.querySelector('.muted')) t.innerHTML='';
   const d=document.createElement('div'); d.className='tline '+(who==='Renee'?'them':'you');
   d.innerHTML='<span class="who">'+who+':</span> '+txt; t.appendChild(d); t.scrollTop=t.scrollHeight;
+  try{autoBank()}catch(e){} try{autoOutcome()}catch(e){}
 }
-function setBant(cell,val,cls){const el=$(cell);el.className='bcell '+cls;el.querySelector('.v').textContent=val; try{renderClose()}catch(e){}}
+function setBant(cell,val,cls){const el=$(cell);el.className='bcell '+cls;el.querySelector('.v').textContent=val; try{renderClose()}catch(e){} try{autoOutcome()}catch(e){}}
 function setCloser(stage,hint){$('closer-stage').textContent=stage; if(hint)$('closer-hint').textContent=hint;}
 /* SAY THIS hero — the line the rep should say now */
 function setSay(html,cue){ const el=$('sayLine'); el.className='say'+(cue?' cue':''); el.innerHTML=html; }
@@ -803,7 +820,7 @@ function setSayFromScript(text){
   if(/^\s*\[/.test(text)) setSay('<span class="qmark">👉</span> Use the rebuttal below — agree, then tell the story.', true);
   else setSay('<span class="qmark">“</span>'+esc(text)+'<span class="qmark">”</span>', true);
 }
-function addNote(txt){const n=$('notes'); if(n.querySelector('.muted'))n.innerHTML=''; const d=document.createElement('div');d.className='n';d.textContent='• '+txt;n.appendChild(d); try{renderClose()}catch(e){}}
+function addNote(txt){const n=$('notes'); if(n.querySelector('.muted'))n.innerHTML=''; const d=document.createElement('div');d.className='n';d.textContent='• '+txt;n.appendChild(d); try{renderClose()}catch(e){} try{autoBank()}catch(e){} try{autoOutcome()}catch(e){}}
 function addChip(label,cls,isNew){
   const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
   const s=document.createElement('span'); s.className='chip '+cls;
@@ -811,7 +828,7 @@ function addChip(label,cls,isNew){
   c.appendChild(s);
   if(cls!=='pos' && heardSignals.indexOf(label)<0) heardSignals.push(label);
   if(isNew) setTimeout(()=>{const nw=s.querySelector('.new'); if(nw)nw.remove();},2600);
-  try{renderClose()}catch(e){}
+  try{renderClose()}catch(e){} try{autoBank()}catch(e){} try{autoOutcome()}catch(e){}
 }
 function flagAlert(tag,quote){
   $('flagAlert').innerHTML='<div class="flag-alert">⚑ <div><b>Signal — '+tag+'.</b> Heard: “'+quote+'.” Added to profile (soft flag). <span style="color:#ffd58a;cursor:pointer">undo</span></div></div>';
@@ -838,7 +855,7 @@ const script=[
   {who:'Renee',aud:'audio/p0.mp3',say:"Hey, yeah — you said you'd call me back today.",closer:['Clarify','clarify why she\'s here']},
   {who:'You',text:"I did, appreciate you picking up. Quick one — how's business right now?"},
   {who:'Renee',aud:'audio/p1.mp3',say:"Three trucks, trying to grow, but honestly I worry about protecting what I've built.",
-    bant:['b-need','Growth + protect','ok'], chip:['High intent','pos',false], closer:['Label','label the problem']},
+    bant:['b-need','Growth + protect','ok'], chip:['High intent','pos',false], bank:'B', closer:['Label','label the problem']},
   {who:'You',text:"That gap is exactly what this closes — growth and downside protection in one."},
   {who:'Renee',aud:'audio/p2.mp3',say:"Okay. So what's it run me?"},
   {who:'You',text:"Eight hundred to get started, then three hundred a month."},
@@ -859,9 +876,10 @@ async function applyEffects(s){
   if(s.chip) addChip(s.chip[0],s.chip[1],s.chip[2]);
   if(s.flag) flagAlert(s.flag[0],s.flag[1]);
   if(s.note) addNote(s.note);
+  if(s.bank && !bankManual) pickBank(s.bank, true);
   if(s.obj) showObjection();
   if(s.closer) setCloser(s.closer[0],s.closer[1]);
-  if(s.outcome){ document.querySelectorAll('.opt').forEach(o=>{if(o.dataset.o===s.outcome)o.classList.add('sel');}); toast('Co-pilot suggests: Booked'); }
+  if(s.outcome && !outcomeManual){ selectOutcome(s.outcome, true); toast('Co-pilot suggests: '+s.outcome); }
 }
 
 async function runCall(){
@@ -924,6 +942,7 @@ function clearCallUI(){
   $('objBox').innerHTML='';
   $('notes').innerHTML='<span class="muted" style="font-size:.76rem">…</span>';
   document.querySelectorAll('.opt').forEach(function(o){o.classList.remove('sel')});
+  outcomeManual=false; dealPaid=false;
   $('nqReasons').className='nq-reasons hidden'; $('nqReasons').innerHTML='';
   $('bookStatus').className='cstatus'; $('bookStatus').textContent='Pick a day in the next 2 weeks, then a time.';
   try{ renderCalDates(); }catch(e){}
@@ -931,6 +950,8 @@ function clearCallUI(){
   try{ setBkMode('closed'); setPlan('monthly'); }catch(e){}
   phEndCall(); $('phMsgs').innerHTML='<div class="ph-empty">Your thread with the prospect — text or call.</div>';
   convo=[]; smsConvo=[]; heardSignals=[]; nqReason='';
+  bankManual=false; document.querySelectorAll('#bankTypes .bank-t').forEach(function(x){x.classList.remove('sel')});
+  var br=$('bankRead'); if(br) br.innerHTML='<span class="muted" style="font-size:.8rem">Tap the prospect’s dominant type — or it auto-reads from the call.</span>';
   setPhCallBtn(); try{renderClose()}catch(e){}
 }
 /* select a prospect into the cockpit (fresh call surfaces) */
@@ -987,24 +1008,37 @@ function resetDemo(){
 $('callBtn').onclick=resetDemo;
 
 /* ===== Outcome selection + the sacred log→next loop ===== */
-function selectOutcome(o){
+var outcomeManual=false, dealPaid=false;
+function selectOutcome(o, auto){
+  if(!auto) outcomeManual=true;
   document.querySelectorAll('.opt').forEach(x=>x.classList.toggle('sel',x.dataset.o===o));
   if(o==='nq') showNqReasons(); else { $('nqReasons').classList.add('hidden'); nqReason=''; }
 }
 document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>selectOutcome(o.dataset.o));
+/* auto-read the outcome from the call; a rep tap overrides + locks it */
+function deriveOutcome(){
+  if(dealPaid) return 'won';
+  if(document.querySelectorAll('#chips .chip.hard').length || $('b-budget').classList.contains('bad')) return 'nq';
+  var ctx=($('transcript').textContent+' '+$('notes').textContent).toLowerCase();
+  if(/not interested|no thanks|not for me|pass on this|don.?t want|we.?re good|no need/.test(ctx)) return 'notint';
+  if(/call me back|call back|callback|reach me|try me|bad time|later this week|next week|another time/.test(ctx)) return 'callback';
+  if($('transcript').querySelector('.tline')) return 'connected';
+  return null;
+}
+function autoOutcome(){ if(outcomeManual) return; var o=deriveOutcome(); if(o) selectOutcome(o, true); }
 /* disqualify reasons — pre-fill from the signals actually heard on this call */
 function showNqReasons(){
   const box=$('nqReasons'); box.classList.remove('hidden');
   const items=[], seen={};
   heardSignals.forEach(l=>{ if(!seen[l]){seen[l]=1; items.push({l,pre:true});} });
-  if($('b-budget').classList.contains('warn')){ const l="Can't afford base ($500 + $300/mo)"; if(!seen[l]){seen[l]=1; items.push({l,pre:true});} }
+  if($('b-budget').classList.contains('warn')||$('b-budget').classList.contains('bad')){ const l="Can't afford base ($800 to start · $300/mo)"; if(!seen[l]){seen[l]=1; items.push({l,pre:true});} }
   ['Uncoachable / know-it-all','Integrity / cuts corners','Get-rich-quick','Not a fit'].forEach(l=>{ if(!seen[l]){seen[l]=1; items.push({l,pre:false});} });
   box.innerHTML=items.map(it=>'<span class="rz'+(it.pre?' pre':'')+'" data-r="'+esc(it.l)+'">'+(it.pre?'• ':'')+esc(it.l)+'</span>').join('');
   box.querySelectorAll('.rz').forEach(r=>r.onclick=()=>{ box.querySelectorAll('.rz').forEach(x=>x.classList.remove('sel')); r.classList.add('sel'); nqReason=r.dataset.r; });
 }
 function logAndNext(){
   const sel=document.querySelector('.opt.sel');
-  if(!sel){ toast('Pick an outcome first (1–4)'); return; }
+  if(!sel){ toast('Pick an outcome first (1–6)'); return; }
   const o=sel.dataset.o;
   if(o==='nq' && !nqReason){ toast('Pick a disqualify reason'); return; }
   if(o==='booked') bump('s-book');
@@ -1028,7 +1062,7 @@ document.addEventListener('keydown',e=>{
   const el=document.activeElement;
   if(el && (el.id==='chatInput' || el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.isContentEditable)) return;
   if(e.metaKey||e.ctrlKey||e.altKey) return;
-  const map={'1':'booked','2':'callback','3':'connected','4':'nq'};
+  const map={'1':'won','2':'booked','3':'callback','4':'connected','5':'notint','6':'nq'};
   const qk={'p':'pay','b':'book','c':'content','z':'zoom','v':'zoom'};
   const lk=(e.key||'').toLowerCase();
   if(map[e.key]){ selectOutcome(map[e.key]); e.preventDefault(); }
@@ -1106,7 +1140,7 @@ async function closerCoach(note){
   const p=curProspectObj(), stage=$('closer-stage').textContent, co=((p.sub||'').split('·')[0]||'').trim();
   const bant=['b-budget','b-auth','b-need','b-time'].map(id=>$(id).querySelector('.v').textContent).filter(v=>v&&v!=='—').join(' · ')||'nothing yet';
   const hintEl=$('closer-hint'), prevHint=hintEl?hintEl.textContent:''; if(hintEl) hintEl.textContent='coaching…';
-  const sys="You are a live sales-call co-pilot running the CLOSER framework (Clarify → Label → Overview → Sell → Explain → Reinforce). The rep is selling an EPIC LIFE membership (business-growth + financial-protection, built on the MyFICO 3-bureau '3B' credit report / FinFit strategy). Tiers: MONTHLY $800 to start then $300/mo — Capital Access & Debt Protection (Credit Audit, Credit Builder, Personal Debt Exit, Family Income Protection), Commercial Benefits (EPIC LIFE Portal + assigned Coach, Banking Relationship Coaching, Liability Holding Company structuring, Business Insurance Review), live member events. ANNUAL $3,500 to start then $3,000/yr (best value) — adds Personal Credit & Cashflow Management, Personal Debt Paydown, Access to Capital (Personal LOCs & HELOCs). PRO $9,700/yr (premium) — adds full business build-out (agency website, business credit/D-U-N-S/Nav, bookkeeping, tax review) and Real Estate (custom strategy, turnkey & off-market property access, lending vendors). Affordability floor: can they cover ~$300/mo. Current CLOSER stage: "+stage+". Prospect: "+p.nm+" ("+co+"). Qualified so far: "+bant+". The rep just noted what the prospect said. Return ONLY a raw JSON object (no markdown): {\"coach\":\"the exact next line the rep should say — 1 to 2 sentences, in the rep's voice\",\"stage\":\"the CLOSER stage the rep should be in now (advance past the current stage if the note shows it's handled)\",\"why\":\"3-6 word reason\"}.";
+  const sys="You are a live sales-call co-pilot running the CLOSER framework (Clarify → Label → Overview → Sell → Explain → Reinforce). The rep is selling an EPIC LIFE membership (business-growth + financial-protection, built on the MyFICO 3-bureau '3B' credit report / FinFit strategy). Tiers: MONTHLY $800 to start then $300/mo — Capital Access & Debt Protection (Credit Audit, Credit Builder, Personal Debt Exit, Family Income Protection), Commercial Benefits (EPIC LIFE Portal + assigned Coach, Banking Relationship Coaching, Liability Holding Company structuring, Business Insurance Review), live member events. ANNUAL $3,500 to start then $3,000/yr (best value) — adds Personal Credit & Cashflow Management, Personal Debt Paydown, Access to Capital (Personal LOCs & HELOCs). PRO $9,700/yr (premium) — adds full business build-out (agency website, business credit/D-U-N-S/Nav, bookkeeping, tax review) and Real Estate (custom strategy, turnkey & off-market property access, lending vendors). Affordability floor: can they cover ~$300/mo. Current CLOSER stage: "+stage+". Prospect: "+p.nm+" ("+co+"). Qualified so far: "+bant+". The rep just noted what the prospect said. Return ONLY a raw JSON object (no markdown): {\"coach\":\"the exact next line the rep should say — 1 to 2 sentences, in the rep's voice\",\"stage\":\"the CLOSER stage the rep should be in now (advance past the current stage if the note shows it's handled)\",\"why\":\"3-6 word reason\",\"bank\":\"the prospect's likely BANK personality from how they talk — one letter: B (Blueprint: security/structure/proof), A (Action: fast/results-now), N (Nurturing: relationships/family/trust), or K (Knowledge: data/facts/expertise)\"}.";
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
       headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
@@ -1118,6 +1152,7 @@ async function closerCoach(note){
     if(d.coach) setSay('<span class="qmark">“</span>'+esc(d.coach)+'<span class="qmark">”</span>', true);
     var st=d.stage && CLOSER_STAGES.find(s=>s.toLowerCase()===String(d.stage).toLowerCase().trim());
     if(st){ setCloser(st, d.why||'from your note'); if(st!==stage) toast('CLOSER → '+st); }
+    if(d.bank && !bankManual){ var bk=String(d.bank).toUpperCase().charAt(0); if(BANK[bk]) pickBank(bk,true); }
     else if(hintEl) hintEl.textContent=prevHint;
   }catch(e){ if(hintEl) hintEl.textContent=prevHint; toast('Coach unavailable — check the 🔑 key'); }
 }
@@ -1302,10 +1337,12 @@ function confirmBooking(){
   } else if(bkMode==='closed'){
     $('bookStatus').innerHTML='✅ 3B onboarding booked — '+nm+' + Client Success · <b>'+when+'</b>';
     phMsg('📅 Booked your <b>3B onboarding call</b> — '+when+'. We’ll pull your MyFICO 3-bureau report together and set up your EPIC LIFE portal.','me');
+    try{ selectOutcome('booked'); }catch(e){}
     toast('Booked 3B — '+when);
   } else {
     $('bookStatus').innerHTML='✅ 3B + closer call booked — '+nm+' + partner + Client Success + closer · <b>'+when+'</b>';
     phMsg('📅 Booked your <b>3B strategy call</b> — '+when+'. We’ll pull your MyFICO 3-bureau report together and walk you + your partner through the full plan.','me');
+    try{ selectOutcome('booked'); }catch(e){}
     toast('Booked 3B — '+when);
   }
 }
@@ -1396,6 +1433,7 @@ async function sendPaymentLink(){
   phMsg('<span class="ttl">Payment received ✅</span>Welcome to EPIC LIFE '+pl.label+' — '+pl.short+'.','ok');
   toast('Payment received 🎉'); bump('s-book');
   $('s-closed').textContent=parseInt($('s-closed').textContent,10)+1; revenue+=pl.collect; updateRev();
+  dealPaid=true; try{ selectOutcome('won'); }catch(e){}
   try{ setBkMode('closed'); }catch(e){}
 }
 $('payBtn').onclick=()=>{ if($('payBtn').disabled){ toast('Payment link already sent'); return; } var pl=PLANS[curPlan], nm=curProspectObj().nm; maybeConfirm(sendPaymentLink,'Send payment link','Text <b>'+esc(nm)+'</b> the <b>'+pl.label+'</b> checkout link — '+pl.short+'?','Send link'); };
@@ -1465,10 +1503,24 @@ const BANK={
  N:{ic:'🟢',name:'Nurturing',drive:'Relationships, people, helping, authenticity — buys from people they trust.',pitch:'Connect first, sell second. Emphasize the community, the assigned coach, how it protects their family. Be real.',close:'“I really want to see you and your family win with this. Let’s get you in — I’ll personally make sure you’re taken care of.”'},
  K:{ic:'🟡',name:'Knowledge',drive:'Data, facts, expertise, competence — wants to be the expert in the room.',pitch:'Bring the numbers. Details, credentials, exactly how the 3B / FinFit strategy works, the ROI. Let them feel smart.',close:'“You’ve seen the numbers and how the strategy works — it’s the logical move. Ready to put it to work?”'}
 };
-function pickBank(b){
+let bankManual=false;
+/* auto-read the prospect's BANK type from how they talk (keyword heuristic; AI refines it when a key is connected) */
+const BANK_KW={
+ B:['process','step','how does it','how it works','proof','guarantee','safe','risk','detail','exactly','structure','plan','cautious','system','secure','protect','careful','make sure','consistent','stable'],
+ A:["let's go",'let’s go','fast','right now','today','excit','opportunit','results','quick','just do it','go for it','jump in','asap','make it happen'],
+ N:['family','team','help','people','trust','relationship','together','care','kids','wife','husband','partner','community','feel','loyal'],
+ K:['data','number','research','compare','expert','roi','study','facts','prove','understand','learn','analy','breakdown','stats','evidence','how much']
+};
+function scoreBank(txt){ txt=(txt||'').toLowerCase(); var s={B:0,A:0,N:0,K:0}; Object.keys(BANK_KW).forEach(function(k){ BANK_KW[k].forEach(function(w){ if(txt.indexOf(w)>=0) s[k]++; }); }); return s; }
+function detectBank(){ var txt=$('transcript').textContent+' '+$('notes').textContent+' '+[].map.call(document.querySelectorAll('#chips .chip'),function(c){return c.textContent;}).join(' ');
+  var s=scoreBank(txt), best=null, bv=0; ['N','B','K','A'].forEach(function(k){ if(s[k]>bv){bv=s[k];best=k;} }); return bv>0?best:null; }
+function autoBank(){ if(bankManual) return; var b=detectBank(); if(b) pickBank(b,true); }
+function pickBank(b, auto){
+  if(!auto) bankManual=true;
   document.querySelectorAll('#bankTypes .bank-t').forEach(x=>x.classList.toggle('sel',x.getAttribute('data-b')===b));
   var d=BANK[b]; if(!d) return;
-  $('bankRead').innerHTML='<div class="bank-name">'+d.ic+' '+d.name+'</div>'+
+  $('bankRead').innerHTML=(auto?'<div class="bank-auto">🔮 Auto-read from the call — tap a type to confirm or change</div>':'')+
+    '<div class="bank-name">'+d.ic+' '+d.name+'</div>'+
     '<div class="bank-drive"><b>Driven by:</b> '+esc(d.drive)+'</div>'+
     '<div class="bank-pitch"><b>How to close them:</b> '+esc(d.pitch)+'</div>'+
     '<div class="cl-say" style="margin-top:8px">'+esc(d.close)+'</div>';
@@ -1601,6 +1653,90 @@ $('clClose').onclick=closeChangelog;
 $('clModal').onclick=(e)=>{ if(e.target===$('clModal')) closeChangelog(); };
 /* Non-blocking new-build notice: highlight the version link + a quick toast — never auto-open a modal over the cockpit */
 try{ if(localStorage.getItem('cockpit_seen_v')!==APP_VERSION){ $('ver').classList.add('ver-new'); setTimeout(()=>toast("🆕 What's new in v"+APP_VERSION+" — tap the version below"),700); } }catch(e){}
+</script>
+
+<!-- ===== EPIC Suite: beta toggle chip (self-contained; Closer keeps its own What's-new) ===== -->
+<style>
+#epicChip{position:fixed;top:9px;right:12px;z-index:1200;display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);box-shadow:0 2px 10px rgba(0,0,0,.4);user-select:none;white-space:nowrap}
+#epicChip:hover{border-color:var(--accent);color:var(--text)}
+#epicChip.beta{background:rgba(245,158,11,.18);border-color:var(--gold);color:#ffd58a;animation:epicPulse 2s ease-in-out infinite}
+@keyframes epicPulse{0%,100%{opacity:1}50%{opacity:.6}}
+body{padding-top:46px}
+.epic-modal{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.epic-modal.hidden{display:none}
+.epic-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:left}
+.epic-box h3{font-size:1.05rem;margin-bottom:6px}
+.epic-box p{font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.epic-box input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:1rem;letter-spacing:2px;text-align:center;text-transform:uppercase}
+.epic-box input:focus{outline:none;border-color:var(--gold)}
+.epic-err{color:var(--red);font-size:.76rem;margin-top:8px;min-height:16px;text-align:center}
+.epic-row{display:flex;gap:8px;margin-top:14px}
+.epic-row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:800;font-size:.85rem;cursor:pointer}
+.epic-go{background:var(--gold);color:#1a1200}.epic-cancel{background:var(--surface2);color:var(--text)}
+</style>
+<script>
+(function(){
+  var CODE='EPICBETA', KEY='epic_mode';
+  var E=window.EPIC=window.EPIC||{};
+  E.isBeta=function(){try{return localStorage.getItem(KEY)==='beta'}catch(e){return false}};
+  function setMode(x){try{localStorage.setItem(KEY,x)}catch(e){}}
+  var chip=document.createElement('div'); chip.id='epicChip';
+  function paint(){ if(E.isBeta()){chip.className='beta';chip.textContent='🧪 BETA · back to Live';chip.title="You're on the beta build — tap to return to Live";}
+    else{chip.className='';chip.textContent='🟢 Live · try beta';chip.title='Tap to enter the beta preview (code required)';} }
+  paint();
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>🧪 Try the beta</h3><p>Enter your beta code to preview the newest in-progress build across the EPIC Suite. Switch back to Live anytime from the chip in the corner.</p><input id="epicCodeIn" placeholder="beta code" autocomplete="off" spellcheck="false"><div class="epic-err" id="epicErr"></div><div class="epic-row"><button class="epic-cancel" id="epicCancel">Cancel</button><button class="epic-go" id="epicGo">Unlock beta</button></div></div>';
+  function showM(){m.classList.remove('hidden');var i=m.querySelector('#epicCodeIn');i.value='';m.querySelector('#epicErr').textContent='';setTimeout(function(){i.focus()},30);}
+  function hideM(){m.classList.add('hidden');}
+  function submitM(){var v=(m.querySelector('#epicCodeIn').value||'').trim().toUpperCase();
+    if(v===CODE){setMode('beta');location.reload();}else{m.querySelector('#epicErr').textContent="That code didn't match. Try again.";}}
+  chip.onclick=function(){ if(E.isBeta()){setMode('live');location.reload();} else {showM();} };
+  document.body.appendChild(chip); document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m)hideM();});
+  m.querySelector('#epicCancel').onclick=hideM; m.querySelector('#epicGo').onclick=submitM;
+  m.querySelector('#epicCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')submitM();});
+})();
+</script>
+
+<!-- ===== EPIC Suite: suggestion box → Supabase (central review) ===== -->
+<style>
+.epic-sugg-btn{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);vertical-align:middle}
+.epic-sugg-btn:hover{border-color:var(--accent);color:var(--text)}
+.epic-sugg-ta{width:100%;min-height:120px;padding:11px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem;font-family:inherit;resize:vertical}
+.epic-sugg-ta:focus{outline:none;border-color:var(--accent)}
+.epic-sugg-ok{background:var(--accent);color:#062a1e}
+</style>
+<script>
+(function(){
+  var SB_URL='https://widdgynledwpqaqndtvz.supabase.co';
+  var SB_KEY='sb_publishable_YTOYoDxjm7MpIuvvSjwOyQ_ToGCW3PQ';
+  var ROLE='EPIC Closer';
+  function say(t){ try{ if(typeof toast==='function'){toast(t);return;} }catch(e){}
+    var d=document.createElement('div'); d.textContent=t;
+    d.style.cssText='position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:700;z-index:1400';
+    document.body.appendChild(d); setTimeout(function(){d.remove();},2400); }
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>💡 Share an idea</h3><p>What would make <b>'+ROLE+'</b> better? Your suggestion goes straight to Bruce for review.</p><textarea class="epic-sugg-ta" id="epicSuggTa" placeholder="An idea, a bug, or something confusing…"></textarea><div class="epic-err" id="epicSuggErr"></div><div class="epic-row"><button class="epic-cancel" id="epicSuggCancel">Cancel</button><button class="epic-go epic-sugg-ok" id="epicSuggSend">Send to Bruce</button></div></div>';
+  function show(){ m.classList.remove('hidden'); var t=m.querySelector('#epicSuggTa'); t.value=''; m.querySelector('#epicSuggErr').textContent=''; setTimeout(function(){t.focus();},30); }
+  function hide(){ m.classList.add('hidden'); }
+  function send(){
+    var ta=m.querySelector('#epicSuggTa'); var txt=(ta.value||'').trim();
+    if(txt.length<3){ m.querySelector('#epicSuggErr').textContent='Add a little more detail.'; return; }
+    var b=m.querySelector('#epicSuggSend'); b.disabled=true; b.textContent='Sending…';
+    var meta={ page:location.pathname, mode:(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())?'beta':'live' };
+    fetch(SB_URL+'/rest/v1/epic_suggestions',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({role:ROLE,text:txt,meta:meta})})
+    .then(function(r){ if(r.ok){ hide(); say('💡 Thanks! Sent to Bruce for review.'); } else { m.querySelector('#epicSuggErr').textContent='Could not send ('+r.status+'). Try again.'; } })
+    .catch(function(){ m.querySelector('#epicSuggErr').textContent='Network error — try again.'; })
+    .finally(function(){ b.disabled=false; b.textContent='Send to Bruce'; });
+  }
+  if(!(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())) return;   // 💡 suggestion box is beta-only
+  var btn=document.getElementById('epicSuggBtn');
+  if(btn){ btn.style.display=''; } else { btn=document.createElement('button'); btn.id='epicSuggBtn'; btn.className='epic-sugg-btn'; btn.textContent='💡 Suggestion'; btn.style.cssText='position:fixed;left:12px;bottom:14px;z-index:1200'; document.body.appendChild(btn); }
+  btn.onclick=show;
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){ if(e.target===m) hide(); });
+  m.querySelector('#epicSuggCancel').onclick=hide; m.querySelector('#epicSuggSend').onclick=send;
+})();
 </script>
 </body>
 </html>

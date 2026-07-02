@@ -59,9 +59,9 @@ kbd{font-family:inherit;font-size:.62rem;font-weight:800;background:var(--surfac
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="../">← EPIC Suite</a>
+  <a class="back" href="../">← EPIC Suite</a> <button type="button" id="epicSuggBtn" class="epic-sugg-btn" style="display:none">💡 Suggest an improvement</button>
   <header>
-    <div class="brand"><h1>🎯 EPIC Setter</h1><div class="sub">Book qualified appointments for the closers</div></div>
+    <div class="brand"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h1>🎯 EPIC Setter</h1><span id="ver">v…</span></div><div class="sub">Book qualified appointments for the closers</div></div>
     <div class="stats">
       <div class="stat"><b id="s-dials">18</b><span>dials</span></div>
       <div class="stat"><b id="s-conv" style="color:var(--gold)">6</b><span>convos</span></div>
@@ -198,6 +198,121 @@ document.addEventListener('keydown',e=>{ if(/INPUT|TEXTAREA/.test((document.acti
   else if(e.key==='Enter'){logNext();e.preventDefault();}
 });
 renderQueue(); renderDates(); selectLead();
+</script>
+
+<!-- ===== EPIC Suite: beta toggle + What's new (self-contained) ===== -->
+<style>
+#epicChip{position:fixed;top:9px;right:12px;z-index:1200;display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);box-shadow:0 2px 10px rgba(0,0,0,.4);user-select:none;white-space:nowrap}
+#epicChip:hover{border-color:var(--accent);color:var(--text)}
+#epicChip.beta{background:rgba(245,158,11,.18);border-color:var(--gold);color:#ffd58a;animation:epicPulse 2s ease-in-out infinite}
+@keyframes epicPulse{0%,100%{opacity:1}50%{opacity:.6}}
+body{padding-top:46px}
+.epic-modal{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.epic-modal.hidden{display:none}
+.epic-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:left}
+.epic-box h3{font-size:1.05rem;margin-bottom:6px}
+.epic-box p{font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.epic-box input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:1rem;letter-spacing:2px;text-align:center;text-transform:uppercase}
+.epic-box input:focus{outline:none;border-color:var(--gold)}
+.epic-err{color:var(--red);font-size:.76rem;margin-top:8px;min-height:16px;text-align:center}
+.epic-row{display:flex;gap:8px;margin-top:14px}
+.epic-row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:800;font-size:.85rem;cursor:pointer}
+.epic-go{background:var(--gold);color:#1a1200}.epic-cancel{background:var(--surface2);color:var(--text)}
+.epicv-box{max-width:520px;max-height:82vh;overflow:auto}
+.epicv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.epicv-head b{font-size:.98rem}.epic-x{cursor:pointer;color:var(--text2);font-size:1.1rem}
+.epicv-entry{padding:12px 0;border-bottom:1px solid var(--border)}.epicv-entry:last-child{border-bottom:none}
+.epicv-v{font-weight:800;color:var(--accent)}.epicv-d{font-size:.72rem;color:var(--muted);margin-left:8px}
+.epicv-entry ul{margin:8px 0 0;padding-left:18px}.epicv-entry li{font-size:.82rem;color:var(--text2);margin-bottom:6px;line-height:1.5}
+#ver{cursor:pointer;font-size:.68rem;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text2);white-space:nowrap;text-decoration:none}
+#ver:hover{border-color:var(--accent);color:var(--text)}
+#ver.new{color:#7ff0c8;background:rgba(16,185,129,.16);border-color:transparent;font-weight:700;animation:epicPulse 1.7s ease-in-out infinite}
+</style>
+<script>
+(function(){
+  var CODE='EPICBETA', KEY='epic_mode';
+  var E=window.EPIC=window.EPIC||{};
+  E.isBeta=function(){try{return localStorage.getItem(KEY)==='beta'}catch(e){return false}};
+  function setMode(x){try{localStorage.setItem(KEY,x)}catch(e){}}
+  var chip=document.createElement('div'); chip.id='epicChip';
+  function paint(){ if(E.isBeta()){chip.className='beta';chip.textContent='🧪 BETA · back to Live';chip.title="You're on the beta build — tap to return to Live";}
+    else{chip.className='';chip.textContent='🟢 Live · try beta';chip.title='Tap to enter the beta preview (code required)';} }
+  paint();
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>🧪 Try the beta</h3><p>Enter your beta code to preview the newest in-progress build across the EPIC Suite. Switch back to Live anytime from the chip in the corner.</p><input id="epicCodeIn" placeholder="beta code" autocomplete="off" spellcheck="false"><div class="epic-err" id="epicErr"></div><div class="epic-row"><button class="epic-cancel" id="epicCancel">Cancel</button><button class="epic-go" id="epicGo">Unlock beta</button></div></div>';
+  function showM(){m.classList.remove('hidden');var i=m.querySelector('#epicCodeIn');i.value='';m.querySelector('#epicErr').textContent='';setTimeout(function(){i.focus()},30);}
+  function hideM(){m.classList.add('hidden');}
+  function submitM(){var v=(m.querySelector('#epicCodeIn').value||'').trim().toUpperCase();
+    if(v===CODE){setMode('beta');location.reload();}else{m.querySelector('#epicErr').textContent="That code didn't match. Try again.";}}
+  chip.onclick=function(){ if(E.isBeta()){setMode('live');location.reload();} else {showM();} };
+  document.body.appendChild(chip); document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m)hideM();});
+  m.querySelector('#epicCancel').onclick=hideM; m.querySelector('#epicGo').onclick=submitM;
+  m.querySelector('#epicCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')submitM();});
+  // ---- What's new (per role) ----
+  var TITLE='EPIC Setter', SEEN='epic_setter_seen';
+  var NOTES=[
+  {v:'1.0.0',d:'2026-07-01',n:[
+   "Work the fresh-lead list fast — tap a lead, run the setter talk-track, and quick-qualify (owner / real interest / can afford / tire-kicker) with a live fit meter.",
+   "Book the strategy call straight onto a closer's calendar — pick the closer, a day in the next 2 weeks, and a time; it confirms and lands in the closer's queue.",
+   "Keyboard-first: press 1–4 to set the outcome (set / callback / not a fit / no answer), Enter to log and jump to the next lead.",
+   "New: a version badge + this What's-new panel, and a 🧪 beta preview you can unlock with a code — switch back to Live anytime from the chip in the corner.",
+  ]},
+  ];
+  var badge=document.getElementById('ver');
+  if(badge&&NOTES.length){
+    var v=NOTES[0].v; badge.textContent='v'+v+" · what's new";
+    var vm=document.createElement('div'); vm.className='epic-modal hidden';
+    vm.innerHTML='<div class="epic-box epicv-box"><div class="epicv-head"><b>📋 What\'s new — '+TITLE+'</b><span class="epic-x">✕</span></div><div>'+
+      NOTES.map(function(p){return '<div class="epicv-entry"><span class="epicv-v">v'+p.v+'</span><span class="epicv-d">'+p.d+'</span><ul>'+p.n.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>';}).join('')+'</div></div>';
+    document.body.appendChild(vm);
+    badge.onclick=function(){vm.classList.remove('hidden');try{localStorage.setItem(SEEN,v)}catch(e){}badge.classList.remove('new');};
+    vm.querySelector('.epic-x').onclick=function(){vm.classList.add('hidden');};
+    vm.addEventListener('click',function(e){if(e.target===vm)vm.classList.add('hidden');});
+    try{if(localStorage.getItem(SEEN)!==v)badge.classList.add('new');}catch(e){}
+  }
+})();
+</script>
+
+<!-- ===== EPIC Suite: suggestion box → Supabase (central review) ===== -->
+<style>
+.epic-sugg-btn{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;padding:5px 11px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);vertical-align:middle;margin-left:8px}
+.epic-sugg-btn:hover{border-color:var(--accent);color:var(--text)}
+.epic-sugg-ta{width:100%;min-height:120px;padding:11px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem;font-family:inherit;resize:vertical}
+.epic-sugg-ta:focus{outline:none;border-color:var(--accent)}
+.epic-sugg-ok{background:var(--accent);color:#062a1e}
+</style>
+<script>
+(function(){
+  var SB_URL='https://widdgynledwpqaqndtvz.supabase.co';
+  var SB_KEY='sb_publishable_YTOYoDxjm7MpIuvvSjwOyQ_ToGCW3PQ';
+  var ROLE='EPIC Setter';
+  function say(t){ try{ if(typeof toast==='function'){toast(t);return;} }catch(e){}
+    var d=document.createElement('div'); d.textContent=t;
+    d.style.cssText='position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:700;z-index:1400';
+    document.body.appendChild(d); setTimeout(function(){d.remove();},2400); }
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>💡 Share an idea</h3><p>What would make <b>'+ROLE+'</b> better? Your suggestion goes straight to Bruce for review.</p><textarea class="epic-sugg-ta" id="epicSuggTa" placeholder="An idea, a bug, or something confusing…"></textarea><div class="epic-err" id="epicSuggErr"></div><div class="epic-row"><button class="epic-cancel" id="epicSuggCancel">Cancel</button><button class="epic-go epic-sugg-ok" id="epicSuggSend">Send to Bruce</button></div></div>';
+  function show(){ m.classList.remove('hidden'); var t=m.querySelector('#epicSuggTa'); t.value=''; m.querySelector('#epicSuggErr').textContent=''; setTimeout(function(){t.focus();},30); }
+  function hide(){ m.classList.add('hidden'); }
+  function send(){
+    var ta=m.querySelector('#epicSuggTa'); var txt=(ta.value||'').trim();
+    if(txt.length<3){ m.querySelector('#epicSuggErr').textContent='Add a little more detail.'; return; }
+    var b=m.querySelector('#epicSuggSend'); b.disabled=true; b.textContent='Sending…';
+    var meta={ page:location.pathname, mode:(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())?'beta':'live' };
+    fetch(SB_URL+'/rest/v1/epic_suggestions',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({role:ROLE,text:txt,meta:meta})})
+    .then(function(r){ if(r.ok){ hide(); say('💡 Thanks! Sent to Bruce for review.'); } else { m.querySelector('#epicSuggErr').textContent='Could not send ('+r.status+'). Try again.'; } })
+    .catch(function(){ m.querySelector('#epicSuggErr').textContent='Network error — try again.'; })
+    .finally(function(){ b.disabled=false; b.textContent='Send to Bruce'; });
+  }
+  if(!(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())) return;   // 💡 suggestion box is beta-only
+  var btn=document.getElementById('epicSuggBtn');
+  if(btn){ btn.style.display=''; } else { btn=document.createElement('button'); btn.id='epicSuggBtn'; btn.className='epic-sugg-btn'; btn.textContent='💡 Suggestion'; btn.style.cssText='position:fixed;left:12px;bottom:14px;z-index:1200'; document.body.appendChild(btn); }
+  btn.onclick=show;
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){ if(e.target===m) hide(); });
+  m.querySelector('#epicSuggCancel').onclick=hide; m.querySelector('#epicSuggSend').onclick=send;
+})();
 </script>
 </body>
 </html>
