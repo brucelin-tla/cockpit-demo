@@ -107,14 +107,15 @@ kbd{font-family:inherit;font-size:.62rem;font-weight:800;background:var(--surfac
       </div>
 
       <div class="panel">
-        <div class="lbl">✅ Quick-qualify · is this worth a closer's time?</div>
+        <div class="lbl">✅ BANT qualify · Budget + Authority are required for a booking to count</div>
         <div class="chips" id="qualChips">
-          <span class="chip" data-q="owner">Owner / decision-maker</span>
-          <span class="chip" data-q="interest">Real interest</span>
-          <span class="chip" data-q="afford">Can afford ~$300/mo</span>
-          <span class="chip no" data-q="tire">Tire-kicker</span>
+          <span class="chip" data-q="budget">💰 Budget · affords $500 + $300/mo</span>
+          <span class="chip" data-q="authority">👤 Authority · decision-maker (or partner joins)</span>
+          <span class="chip" data-q="need">🎯 Need · real problem EPIC solves</span>
+          <span class="chip" data-q="timeline">⏰ Timeline · ready to start soon</span>
         </div>
-        <div class="fitbar" id="fitBar">Tap what you hear — the fit meter updates.</div>
+        <label id="intentWrap" style="display:flex;align-items:center;gap:8px;margin:11px 0 0;font-size:.82rem;color:var(--text);cursor:pointer;font-weight:600"><input type="checkbox" id="intentChk" style="width:16px;height:16px"> ✅ Intent — prospect <b>confirmed the slot</b> (accepted the time)</label>
+        <div class="fitbar" id="fitBar">Tap what you hear. Budget + Authority are required to qualify.</div>
       </div>
 
       <div class="panel">
@@ -171,19 +172,22 @@ function selectLead(){
   var l=LEADS[cur]; $('pAvatar').textContent=l.ini; $('pName').textContent=l.nm; $('pSub').textContent=l.sub;
   $('pSrc').textContent=l.src; $('pPhone').textContent=l.phone; $('pWhen').textContent=l.when;
   qual={}; document.querySelectorAll('#qualChips .chip').forEach(c=>c.classList.remove('sel'));
+  if($('intentChk'))$('intentChk').checked=false;
   updateFit(); document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
   calDate=null; calTime=null; renderDates(); $('bookStatus').className='cstatus'; $('bookStatus').textContent='Pick a closer, day, and time.';
   document.querySelectorAll('.qcard').forEach((c,i)=>c.classList.toggle('active',i===cur));
 }
+function isQualified(){ return !!(qual.budget && qual.authority && (qual.need||qual.timeline)); }
+function hasIntent(){ return !!($('intentChk')&&$('intentChk').checked); }
 function updateFit(){
-  var pos=(qual.owner?1:0)+(qual.interest?1:0)+(qual.afford?1:0), no=qual.tire?1:0;
   var el=$('fitBar');
-  if(no){ el.className='fitbar fit-no'; el.textContent='🙅 Likely not a fit — don\'t waste the closer\'s time.'; }
-  else if(pos>=2){ el.className='fitbar fit-hot'; el.textContent='🔥 Strong fit — set the appointment.'; }
-  else if(pos>=1){ el.className='fitbar fit-mid'; el.textContent='🟡 Warming — qualify a bit more, then set.'; }
-  else { el.className='fitbar'; el.textContent='Tap what you hear — the fit meter updates.'; }
+  if(!qual.budget||!qual.authority){ el.className='fitbar fit-no'; el.textContent='🔴 Not qualified — Budget + Authority are required before a booking counts.'; }
+  else if(!isQualified()){ el.className='fitbar fit-mid'; el.textContent='🟡 Almost — add Need or Timeline to clear the BANT bar.'; }
+  else if(!hasIntent()){ el.className='fitbar fit-mid'; el.textContent='🟡 BANT met — now confirm intent (prospect accepts the slot) for a qualified booking.'; }
+  else { el.className='fitbar fit-hot'; el.textContent='🟢 Qualified booking — BANT met + intent confirmed. Book it; the closer verifies live on the call.'; }
 }
-document.querySelectorAll('#qualChips .chip').forEach(c=>c.onclick=()=>{ var q=c.dataset.q; qual[q]=!qual[q]; c.classList.toggle('sel',qual[q]); updateFit(); });
+document.querySelectorAll('#qualChips .chip').forEach(c=>c.onclick=()=>{ var q=c.dataset.q; qual[q]=!qual[q]; c.classList.toggle('sel',qual[q]); updateFit(); if(calDate&&calTime)maybeBook(); });
+if($('intentChk'))$('intentChk').onchange=function(){ updateFit(); if(calDate&&calTime)maybeBook(); };
 document.querySelectorAll('#closers .closer').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#closers .closer').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); closer=b.dataset.c; maybeBook(); });
 const CAL_TIMES=['9:00 am','10:30 am','1:00 pm','2:30 pm','4:00 pm'];
 function renderDates(){
@@ -194,9 +198,11 @@ function renderDates(){
 }
 function renderTimes(){ var box=$('calTimes'); box.innerHTML=CAL_TIMES.map(t=>'<button class="cal-time" data-t="'+t+'">'+t+'</button>').join('');
   box.querySelectorAll('.cal-time').forEach(b=>b.onclick=()=>{box.querySelectorAll('.cal-time').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');calTime=b.dataset.t;maybeBook();}); }
-function maybeBook(){ if(!calDate||!calTime) return; $('bookStatus').className='cstatus ok';
-  $('bookStatus').innerHTML='✅ 20-min strategy call booked with <b>'+closer+'</b> · <b>'+calDate+' · '+calTime+'</b><br><span style="color:var(--text2);font-weight:400">'+LEADS[cur].nm+' + closer · confirmation texted · shows in the closer\'s queue</span>';
-  document.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.o==='set')); toast('Appointment set — handed to '+closer);
+function maybeBook(){ if(!calDate||!calTime) return; var ok=isQualified()&&hasIntent(); $('bookStatus').className='cstatus ok';
+  $('bookStatus').innerHTML='📅 Strategy call booked with <b>'+closer+'</b> · <b>'+calDate+' · '+calTime+'</b><br>'+
+    (ok?'<span style="color:#7ff0c8">🟢 <b>Qualified booking</b> (BANT + intent) — pending closer verification on the call. Your <b>$100</b> locks when the closer confirms qualified + it sits.</span>'
+       :'<span style="color:#ffd58a">🟡 Booked, but <b>not yet a qualified booking</b>'+(!isQualified()?' — BANT bar not met (Budget + Authority required)':' — confirm intent (prospect accepts the slot)')+'. No BDR commission until it qualifies + the closer verifies.</span>');
+  document.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',o.dataset.o==='set')); toast(ok?'Qualified booking → '+closer:'Booked (not yet qualified)');
 }
 document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');});
 function bump(id){$(id).textContent=+$(id).textContent+1;}

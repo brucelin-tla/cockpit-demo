@@ -393,6 +393,16 @@ kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);b
         <div id="histBox" class="hist-box hidden"></div>
       </div>
 
+      <div class="panel" id="verifyPanel">
+        <div class="lbl">🤝 Verify the BDR's booking <span class="muted" style="text-transform:none;letter-spacing:0">· one tap releases (or voids) the BDR's $100</span></div>
+        <div id="verifyBody" style="font-size:.82rem;color:var(--text2);line-height:1.5"><b id="vBdr">Kai Rivera</b> tagged this booking <b style="color:var(--text)">BANT: 💰 Budget ✓ · 👤 Authority ✓ · 🎯 Need ✓</b> · ✅ intent confirmed. <span id="vAi">🤖 AI corroborating from the live call…</span></div>
+        <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap">
+          <button id="vQual" style="background:var(--accent);color:#062a1e;border:none;border-radius:8px;padding:9px 15px;font-weight:800;cursor:pointer;font-size:.85rem">✅ Qualified — release $100</button>
+          <button id="vNot" style="background:var(--bg2);color:#ffb1b1;border:1px solid var(--red);border-radius:8px;padding:9px 15px;font-weight:800;cursor:pointer;font-size:.85rem">🚫 Not qualified — void</button>
+        </div>
+        <div id="vResult" style="font-size:.82rem;margin-top:10px"></div>
+      </div>
+
       <!-- Signals & flags + BANT + live transcript — one box above the closer -->
       <div class="panel">
         <div class="lbl">🏷️ Signals &amp; flags <span class="muted" style="text-transform:none;letter-spacing:0">· live from the call · consent shows here too · BANT pinned below ↓</span></div>
@@ -617,6 +627,9 @@ const $=id=>document.getElementById(id);
 /* ===== Changelog — newest first. Bump this on every promote to live.
    version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
 const PATCH_NOTES=[
+{v:'1.22.0',d:'2026-07-02',n:[
+ "Qualified-booking verification for the BDR's $100. The Setter now qualifies on BANT (Budget + Authority required) plus an intent check (prospect confirmed the slot); a booking only counts as qualified when both clear. The Closer verifies with one tap — ✅ Qualified / 🚫 Not qualified, with AI corroboration of the BANT — and that's what releases or voids the BDR's $100 (voided → rolls to the house). Admin dashboard adds a BDR booking-quality view: qualified-rate, BANT-match, no-shows, verified vs pending.",
+]},
 {v:'1.21.0',d:'2026-07-02',n:[
  "Commission system + leaderboards. Each closed membership's $500 setup splits: $100 lead gen (referral partner, or TLA if ads-sourced), $100 BDR booking, $100 closer for the 3B, $200 closer for the membership. Every role now sees its own leaderboard + earnings, and the admin dashboard shows the full commission breakdown per deal.",
 ]},
@@ -1765,6 +1778,16 @@ var B=[{n:'Ana Vega (Sr)',s:'4 closed',p:'$1,200'},{n:'Devin Lu',s:'3 closed',p:
 var p=document.createElement('div');p.className='panel';p.style.marginTop='12px';
 p.innerHTML='<div class="lbl">'+TITLE+'</div>'+B.map(function(l,i){return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="width:20px;height:20px;border-radius:50%;'+(i===0?'background:rgba(245,158,11,.2);color:var(--gold)':'background:var(--bg2);color:var(--text2)')+';display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800">'+(i+1)+'</span><div style="flex:1;min-width:0"><b style="font-size:.85rem">'+l.n+'</b> <span style="font-size:.66rem;color:var(--text2)">· '+l.s+'</span></div><span style="font-weight:800;color:#7ff0c8">'+l.p+'</span></div>';}).join('')+'<div style="margin-top:9px;font-size:.76rem;color:var(--gold);font-weight:700">'+YOU+'</div>';
 w.appendChild(p);})();
+</script>
+
+<!-- verify-the-booking control (releases the BDR's $100) -->
+<script>
+(function(){var q=document.getElementById('vQual'),n=document.getElementById('vNot'),r=document.getElementById('vResult'),ai=document.getElementById('vAi');
+if(!q)return;
+setTimeout(function(){ if(ai) ai.innerHTML='🤖 <b style="color:#7ff0c8">AI corroborated the BANT</b> (matches the BDR\'s tags).'; },1400);
+q.onclick=function(){ r.style.color='#7ff0c8'; r.innerHTML='✓ <b>Verified qualified.</b> BDR <b>Kai Rivera</b> credited <b>$100</b> — booking marked Qualified. (Fires on show + this confirm.)'; q.disabled=true;n.disabled=true;q.style.opacity=.55;n.style.opacity=.55; };
+n.onclick=function(){ r.style.color='#ffb1b1'; r.innerHTML='🚫 <b>Marked not qualified</b> — no BDR commission; the $100 stays with the house (TLA). Logged against the BDR\'s qualified-rate.'; q.disabled=true;n.disabled=true;q.style.opacity=.55;n.style.opacity=.55; };
+})();
 </script>
 </body>
 </html>

@@ -105,6 +105,11 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
         <div class="lbl">🔗 Recent interactions — who's handling + commission</div>
         <div style="overflow-x:auto"><table class="tbl" id="interactions"></table></div>
       </div>
+      <div class="panel">
+        <div class="lbl">🎯 BDR booking quality — verified qualified bookings drive the $100</div>
+        <div style="overflow-x:auto"><table class="tbl" id="bdrqual"></table></div>
+        <div class="note">BDR earns $100 when a booking is <b>verified qualified</b> — BANT met (Budget + Authority required) + intent + it sits, confirmed by the closer with AI corroboration. Earned/locked at the qualified booking, paid from the $500 on close (TLA fronts). No-shows &amp; closer-disqualifies don't pay — that $100 rolls to the house. Watch <b>BANT-match</b> (BDR tags vs what the AI heard) for gaming.</div>
+      </div>
     </div>
     <div>
       <div class="panel">
@@ -158,10 +163,15 @@ const INTERACTIONS=[
 // role leaderboards — commission earned MTD
 const BOARDS={
  partners:[{nm:'Maria Lopez',d:3,pay:300},{nm:'Sofia Reyes',d:2,pay:200},{nm:'James Cole',d:1,pay:100},{nm:'TLA (ads)',d:1,pay:100}],
- bdrs:[{nm:'Kai Rivera',d:2,pay:200},{nm:'Mia Tan',d:2,pay:200},{nm:'Jordan Poe',d:1,pay:100}],
+ bdrs:[{nm:'Kai Rivera',d:4,pay:400},{nm:'Mia Tan',d:4,pay:400},{nm:'Jordan Poe',d:2,pay:200}],
  closers:[{nm:'Ana Vega (Sr)',d:4,pay:1200},{nm:'Devin Lu',d:3,pay:900}]
 };
-const BOARDMETA={partners:['Top partners / lead gen','sourced'],bdrs:['Top BDRs','booked'],closers:['Top closers','closed']};
+const BOARDMETA={partners:['Top partners / lead gen','sourced'],bdrs:['Top BDRs','qualified bookings'],closers:['Top closers','closed']};
+const BDRQUAL=[
+ {nm:'Kai Rivera',booked:6,qual:4,bant:95,noshow:1,verified:400,pending:100},
+ {nm:'Mia Tan',booked:5,qual:4,bant:92,noshow:0,verified:400,pending:0},
+ {nm:'Jordan Poe',booked:4,qual:2,bant:78,noshow:1,verified:200,pending:0}
+];
 const CSBOARD=[{nm:'Renee Webb',d:3},{nm:'Priya Nair',d:2}];
 const SUGGESTIONS=[
  {r:'EPIC Setter',t:'Let me text the strategy-call reminder from inside the tool.'},
@@ -192,6 +202,7 @@ $('lbtabs').innerHTML=Object.keys(BOARDS).map((k,i)=>'<span class="lbtab'+(i===0
 document.querySelectorAll('.lbtab').forEach(t=>t.onclick=()=>renderBoard(t.dataset.k));
 renderBoard('partners');
 $('csboard').innerHTML=CSBOARD.map((l,i)=>'<div class="lead"><span class="rank'+(i===0?' g':'')+'">'+(i+1)+'</span><div class="who"><b>'+l.nm+'</b><span>'+l.d+' onboarded</span></div></div>').join('');
+$('bdrqual').innerHTML='<tr><th>BDR</th><th>Booked</th><th>Qual</th><th>Rate</th><th>BANT match</th><th>No-show</th><th>$ verified</th><th>$ pending</th></tr>'+BDRQUAL.map(function(b){var rate=Math.round(b.qual/b.booked*100);var low=b.bant<85;return '<tr><td><b>'+b.nm+'</b></td><td>'+b.booked+'</td><td>'+b.qual+'</td><td>'+rate+'%</td><td style="font-weight:700;color:'+(low?'#ffb1b1':'#7ff0c8')+'">'+b.bant+'%'+(low?' ⚠️':'')+'</td><td>'+b.noshow+'</td><td class="comm">$'+b.verified+'</td><td class="comm pend">'+(b.pending?'$'+b.pending:'—')+'</td></tr>';}).join('');
 $('suggestions').innerHTML=SUGGESTIONS.map(s=>'<div class="sug"><div class="r">'+s.r+'</div><p>'+s.t+'</p></div>').join('');
 </script>
 </body>
