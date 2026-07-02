@@ -44,6 +44,19 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
 .rewards{font-size:.78rem;color:var(--text2);line-height:1.6}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;opacity:0;transition:.3s;pointer-events:none}
 .toast.show{opacity:1}
+/* ── mobile-first (Referral is used mostly on phones) ── */
+@media(max-width:640px){
+  body{padding:12px}
+  header{flex-wrap:wrap;padding:11px 13px;gap:8px}
+  .brand h1{font-size:1.2rem}.brand .sub{font-size:.78rem}
+  .stats{width:100%;gap:6px}.stat{flex:1;padding:7px 4px}.stat b{font-size:1.1rem}
+  .panel{padding:14px}
+  .fld input,.fld textarea{font-size:16px;padding:12px}   /* 16px = no iOS zoom */
+  .vet{flex-direction:column}.vet button{font-size:.92rem;padding:14px}
+  .btn{padding:15px;font-size:1.02rem}
+  .rewards{font-size:.86rem}.ref .rn{font-size:.95rem}
+  .track .st{font-size:.62rem;padding:5px 2px}
+}
 </style>
 </head>
 <body>
@@ -174,6 +187,9 @@ body{padding-top:46px}
   // ---- What's new (per role) ----
   var TITLE='EPIC Referral Partner', SEEN='epic_referral_seen';
   var NOTES=[
+  {v:'1.0.1',d:'2026-07-02',n:[
+   "Optimized for mobile — bigger tap targets, phone-friendly forms (no zoom-on-tap), and a cleaner one-column layout.",
+  ]},
   {v:'1.0.0',d:'2026-07-01',n:[
    "Refer people you care about in seconds — add their name and how you know them, and say whether you've already talked to them about EPIC LIFE.",
    "Smart routing: warm/vetted referrals go straight to a Closer; names you haven't pitched go to a BDR/Setter to qualify first.",

@@ -43,6 +43,16 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
 .note-input{width:100%;margin-top:8px;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.82rem}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--purple);color:#d6c7ff;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;opacity:0;transition:.3s;pointer-events:none}
 .toast.show{opacity:1}
+/* ── mobile safety (Client Success is desktop-priority, still usable on phones) ── */
+@media(max-width:640px){
+  body{padding:12px}
+  header{flex-wrap:wrap;padding:11px 13px;gap:8px}
+  .brand h1{font-size:1.15rem}.brand .sub{font-size:.76rem}
+  .stats{width:100%;gap:6px}.stat{flex:1;padding:7px 4px}
+  .btn{padding:13px 15px}
+  .step .box{width:24px;height:24px}.step .t{font-size:.95rem}
+  .note-input{font-size:16px}
+}
 .hint{font-size:.74rem;color:var(--muted);margin-top:4px}
 </style>
 </head>

@@ -1,5 +1,9 @@
 # EPIC Suite — changelog (newest first)
 
+- **1.19.1** — **← EPIC Suite** back link added to the Closer. **Referral Partner & Setter** got a mobile-first
+  pass (bigger tap targets, no zoom-on-tap forms, full-width primary buttons, one-column). **Client Success**
+  got mobile-safety touches. Closer & Client Success stay desktop-priority.
+
 - **1.19.0** — EPIC Suite promote. **🧪 Beta toggle** across the whole suite (top-right chip: Live ⇄ Beta,
   code-gated, remembered per browser; hub routes the Closer card to the right build). **💡 Suggestion box
   (Beta only)** on every role tool → writes to Supabase for central review. **Per-role What's-new** badges on

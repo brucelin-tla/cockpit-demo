@@ -55,6 +55,21 @@ kbd{font-family:inherit;font-size:.62rem;font-weight:800;background:var(--surfac
 .btn{padding:10px 16px;border:none;border-radius:var(--radius-sm);font-weight:800;font-size:.9rem;cursor:pointer;background:var(--gold);color:#1a1200;margin-left:auto}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--gold);color:#ffd58a;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;opacity:0;transition:.3s;pointer-events:none}
 .toast.show{opacity:1}
+/* ── mobile-first (Setter is used mostly on phones) ── */
+@media(max-width:640px){
+  body{padding:12px}
+  header{flex-wrap:wrap;padding:11px 13px;gap:8px}
+  .brand h1{font-size:1.2rem}.brand .sub{font-size:.78rem}
+  .stats{width:100%;gap:6px}.stat{flex:1;padding:7px 4px}.stat b{font-size:1.1rem}
+  .say{font-size:1rem}
+  .chip{font-size:.88rem;padding:11px 14px}
+  .closer{font-size:.86rem;padding:11px 13px}
+  .cal-date{padding:8px 2px;font-size:.66rem}
+  .cal-time{padding:10px 13px;font-size:.84rem}
+  .disp{gap:8px}
+  .opt{font-size:.92rem;padding:12px 10px;flex:1 1 42%;justify-content:center}
+  .btn{margin-left:0;width:100%;padding:15px;font-size:1.02rem;order:9}
+}
 </style>
 </head>
 <body>
@@ -252,6 +267,9 @@ body{padding-top:46px}
   // ---- What's new (per role) ----
   var TITLE='EPIC Setter', SEEN='epic_setter_seen';
   var NOTES=[
+  {v:'1.0.1',d:'2026-07-02',n:[
+   "Optimized for mobile — bigger tap targets, a full-width Log & Next button, and a cleaner one-column layout.",
+  ]},
   {v:'1.0.0',d:'2026-07-01',n:[
    "Work the fresh-lead list fast — tap a lead, run the setter talk-track, and quick-qualify (owner / real interest / can afford / tire-kicker) with a live fit meter.",
    "Book the strategy call straight onto a closer's calendar — pick the closer, a day in the next 2 weeks, and a time; it confirms and lands in the closer's queue.",
