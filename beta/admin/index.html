@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPIC Suite — Admin Dashboard</title>
+<style>
+:root{--bg:#0a0e17;--bg2:#111827;--surface:#1f2937;--surface2:#273349;--border:#2d3a50;--text:#e8ecf2;--text2:#9ca3b4;--muted:#6b7280;--accent:#10b981;--gold:#f59e0b;--red:#ef4444;--blue:#3b82f6;--purple:#a78bfa;--radius:14px;--radius-sm:9px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:16px}
+.wrap{max-width:1180px;margin:0 auto}
+a.back{color:var(--text2);font-size:.78rem;text-decoration:none}a.back:hover{color:var(--text)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 17px;border-bottom:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);margin:8px 0 14px}
+.brand h1{font-size:1.15rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand .sub{font-size:.72rem;color:var(--text2)}
+.demo{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:4px 10px;border-radius:999px;background:rgba(245,158,11,.16);color:#ffd58a}
+.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:820px){.metrics{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:480px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 13px}
+.metric b{font-size:1.5rem;display:block;line-height:1.1}.metric span{font-size:.64rem;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.cols{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px;margin-bottom:14px}
+.lbl{font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:11px;font-weight:700}
+/* funnel */
+.funnel{display:flex;flex-direction:column;gap:9px}
+.stage{display:flex;align-items:center;gap:11px}
+.stage .nm{width:110px;font-size:.8rem;font-weight:700;flex:0 0 auto}
+.stage .track{flex:1;height:26px;background:var(--bg2);border-radius:7px;overflow:hidden;position:relative}
+.stage .track i{display:block;height:100%;border-radius:7px}
+.stage .val{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:.74rem;font-weight:800}
+.stage .cv{width:52px;text-align:right;font-size:.72rem;color:var(--text2);flex:0 0 auto}
+.f1{background:linear-gradient(90deg,#3b82f6,#60a5fa)}.f2{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.f3{background:linear-gradient(90deg,#10b981,#34d399)}.f4{background:linear-gradient(90deg,#a78bfa,#c4b5fd)}
+/* leaderboard */
+.lead{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}.lead:last-child{border-bottom:none}
+.rank{width:22px;height:22px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex:0 0 auto}
+.rank.g{background:rgba(245,158,11,.2);color:var(--gold)}
+.lead .who{flex:1;min-width:0}.lead .who b{font-size:.86rem}.lead .who span{display:block;font-size:.68rem;color:var(--text2)}
+.tier{font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(167,139,250,.16);color:#d6c7ff}
+.lead .pts{font-size:.8rem;font-weight:800;color:var(--gold);flex:0 0 auto}
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.tbl th{text-align:left;font-size:.64rem;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);padding:7px 9px;border-bottom:1px solid var(--border);font-weight:700}
+.tbl td{padding:9px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.chipst{font-size:.64rem;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.st-sub{background:rgba(156,163,180,.16);color:var(--text2)}.st-book{background:rgba(245,158,11,.16);color:#ffd58a}
+.st-close{background:rgba(59,130,246,.16);color:#bcd4ff}.st-join{background:rgba(16,185,129,.16);color:#7ff0c8}
+.owner{font-size:.72rem;color:var(--text2)}
+.rw{font-size:.72rem;font-weight:700}.rw.paid{color:#7ff0c8}.rw.pend{color:var(--text2)}
+.sug{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:var(--bg2)}
+.sug .r{font-size:.62rem;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:.4px}
+.sug p{font-size:.8rem;color:var(--text);margin-top:3px}
+.note{font-size:.72rem;color:var(--muted);margin-top:6px;line-height:1.5}
+.foot{color:var(--muted);font-size:.72rem;margin-top:16px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">← EPIC Suite</a>
+  <header>
+    <div class="brand"><h1>📊 EPIC Suite — Admin Dashboard</h1><div class="sub">Global view · Referral → Setter → Closer → Client Success</div></div>
+    <span class="demo">Demo data</span>
+  </header>
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="cols">
+    <div>
+      <div class="panel">
+        <div class="lbl">🔻 Funnel — this month</div>
+        <div class="funnel" id="funnel"></div>
+        <div class="note">Conversion shown vs. the stage above. Reward auto-fires to the referring member when a referral reaches <b>Joined</b>.</div>
+      </div>
+      <div class="panel">
+        <div class="lbl">🔗 Recent interactions — who's handling each referral</div>
+        <div style="overflow-x:auto">
+          <table class="tbl" id="interactions"></table>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="lbl">🏆 Top referral partners</div>
+        <div id="leaderboard"></div>
+      </div>
+      <div class="panel">
+        <div class="lbl">💡 Latest suggestions</div>
+        <div id="suggestions"></div>
+        <div class="note">Live suggestions are stored in Supabase (<code>epic_suggestions</code>). This panel shows samples — wiring the live feed needs admin auth (see below).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    🔒 <b>Prototype access.</b> This dashboard is unlocked by a client-side admin code — fine for a demo, but <b>not real security</b> (anyone with the link/source can view it). For production, gate it with Supabase Auth (owner role) so the live referral/booking/close/onboarding + suggestion data reads securely per-account.
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+/* ---- soft admin gate (prototype only) ---- */
+try{ if(localStorage.getItem('epic_admin')!=='1'){ /* allow view but flag */ } }catch(e){}
+
+/* ===== DEMO DATA — representative of the synced funnel ===== */
+const METRICS=[
+ {v:'42',l:'Referrals'},{v:'18',l:'Booked'},{v:'7',l:'Closed'},{v:'5',l:'Onboarded'},
+ {v:'$24.5k',l:'Referred rev'},{v:'11',l:'Active partners'}
+];
+const FUNNEL=[
+ {nm:'Referrals',v:42,pct:100,cls:'f1'},
+ {nm:'Booked (Setter)',v:18,pct:43,cls:'f2'},
+ {nm:'Closed (Closer)',v:7,pct:39,cls:'f3'},
+ {nm:'Onboarded (CS)',v:5,pct:71,cls:'f4'}
+];
+// each referral's journey: who referred, referred person, stage, the rep at each leg, reward state
+const INTERACTIONS=[
+ {ref:'Alicia Grant',by:'Maria Lopez (member)',stage:'join',setter:'—',closer:'Ana',cs:'Renee',plan:'Annual',reward:'paid'},
+ {ref:'Priya Shah',by:'Maria Lopez (member)',stage:'close',setter:'Marco',closer:'Ana',cs:'—',plan:'Pro',reward:'pend'},
+ {ref:'Dana Liu',by:'James Cole (member)',stage:'book',setter:'Marco',closer:'Ana',cs:'—',plan:'—',reward:'pend'},
+ {ref:'Tom Nguyen',by:'James Cole (member)',stage:'sub',setter:'(triaging)',closer:'—',cs:'—',plan:'—',reward:'pend'},
+ {ref:'Keoni Mahoe',by:'Sofia Reyes (member)',stage:'join',setter:'Marco',closer:'Marco',cs:'Renee',plan:'Monthly',reward:'paid'},
+ {ref:'Derek Cole',by:'Sofia Reyes (member)',stage:'sub',setter:'(triaging)',closer:'—',cs:'—',plan:'—',reward:'pend'}
+];
+const LEADERS=[
+ {nm:'Maria Lopez',refs:9,joined:3,pts:4750,tier:'Partner'},
+ {nm:'Sofia Reyes',refs:7,joined:2,pts:2500,tier:'Ambassador'},
+ {nm:'James Cole',refs:6,joined:1,pts:1500,tier:'Ambassador'},
+ {nm:'Grace Tan',refs:4,joined:1,pts:1250,tier:'Connector'},
+ {nm:'Leilani Kane',refs:3,joined:0,pts:500,tier:'Connector'}
+];
+const SUGGESTIONS=[
+ {r:'EPIC Setter',t:'Let me text the strategy-call reminder from inside the tool.'},
+ {r:'EPIC Closer',t:'Add a one-tap “send the recording” after the call.'},
+ {r:'Referral Partner',t:'Show me which closer is working my referral right now.'}
+];
+const STLABEL={sub:['Submitted','st-sub'],book:['Booked','st-book'],close:['Closed','st-close'],join:['Joined','st-join']};
+
+$('metrics').innerHTML=METRICS.map(m=>'<div class="metric"><b>'+m.v+'</b><span>'+m.l+'</span></div>').join('');
+$('funnel').innerHTML=FUNNEL.map(f=>'<div class="stage"><span class="nm">'+f.nm+'</span><div class="track"><i class="'+f.cls+'" style="width:'+f.pct+'%"></i><span class="val">'+f.v+'</span></div><span class="cv">'+f.pct+'%</span></div>').join('');
+$('interactions').innerHTML='<tr><th>Referral</th><th>Referred by</th><th>Stage</th><th>Handling</th><th>Plan</th><th>Partner reward</th></tr>'+
+ INTERACTIONS.map(i=>{var s=STLABEL[i.stage];var who=[i.setter!=='—'?'🎯 '+i.setter:'',i.closer!=='—'?'📞 '+i.closer:'',i.cs!=='—'?'🌟 '+i.cs:''].filter(Boolean).join(' → ')||'—';
+   return '<tr><td><b>'+i.ref+'</b></td><td class="owner">'+i.by+'</td><td><span class="chipst '+s[1]+'">'+s[0]+'</span></td><td class="owner">'+who+'</td><td>'+i.plan+'</td><td class="rw '+(i.reward==='paid'?'paid':'pend')+'">'+(i.reward==='paid'?'✓ credited':'pending')+'</td></tr>';}).join('');
+$('leaderboard').innerHTML=LEADERS.map((l,i)=>'<div class="lead"><span class="rank'+(i===0?' g':'')+'">'+(i+1)+'</span><div class="who"><b>'+l.nm+'</b><span>'+l.refs+' referrals · '+l.joined+' joined</span></div><span class="tier">'+l.tier+'</span><span class="pts">'+l.pts.toLocaleString()+'</span></div>').join('');
+$('suggestions').innerHTML=SUGGESTIONS.map(s=>'<div class="sug"><div class="r">'+s.r+'</div><p>'+s.t+'</p></div>').join('');
+</script>
+</body>
+</html>

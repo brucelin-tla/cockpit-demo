@@ -69,6 +69,7 @@ h1{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,var(--acce
   <div class="foot">
     The EPIC funnel:
     <div class="flow"><b>Referral Partner</b> refers → 🎯 <b>BDR / Setter</b> books → 📞 <b>Closer</b> closes → 🌟 <b>Client Success</b> onboards</div>
+    <div style="margin-top:16px"><span id="adminLink" style="cursor:pointer;color:var(--muted);font-size:.72rem" title="Admin dashboard — global view">🔒 Admin</span></div>
   </div>
 </div>
 
@@ -126,6 +127,25 @@ h1{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,var(--acce
   m.addEventListener('click',function(e){if(e.target===m)hideM();});
   m.querySelector('#epicCancel').onclick=hideM; m.querySelector('#epicGo').onclick=submitM;
   m.querySelector('#epicCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')submitM();});
+})();
+</script>
+
+<!-- ===== EPIC Suite: admin gate → global dashboard (prototype code gate; use Supabase Auth for real security) ===== -->
+<script>
+(function(){
+  var ACODE='EPICADMIN', FILE=/\.html?$/i.test(location.pathname);
+  var link=document.getElementById('adminLink'); if(!link) return;
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>🔒 Admin access</h3><p>Enter the admin code to open the global dashboard — referrals, bookings, closes, onboarding, and suggestions across all roles.</p><input id="adminCodeIn" type="password" placeholder="admin code" autocomplete="off" spellcheck="false"><div class="epic-err" id="adminErr"></div><div class="epic-row"><button class="epic-cancel" id="adminCancel">Cancel</button><button class="epic-go" id="adminGo">Open dashboard</button></div></div>';
+  document.body.appendChild(m);
+  function open(){m.classList.remove('hidden');var i=m.querySelector('#adminCodeIn');i.value='';m.querySelector('#adminErr').textContent='';setTimeout(function(){i.focus()},30);}
+  function hide(){m.classList.add('hidden');}
+  function go(){var v=(m.querySelector('#adminCodeIn').value||'').trim().toUpperCase();
+    if(v===ACODE){ try{localStorage.setItem('epic_admin','1')}catch(e){} location.href=FILE?'admin.html':'admin/'; }
+    else { m.querySelector('#adminErr').textContent='Incorrect code.'; } }
+  link.onclick=open; m.addEventListener('click',function(e){if(e.target===m)hide();});
+  m.querySelector('#adminCancel').onclick=hide; m.querySelector('#adminGo').onclick=go;
+  m.querySelector('#adminCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')go();});
 })();
 </script>
 </body>
