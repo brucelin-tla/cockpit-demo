@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPIC Client Success — Onboard & take care of members</title>
+<style>
+:root{--bg:#0a0e17;--bg2:#111827;--surface:#1f2937;--surface2:#273349;--border:#2d3a50;--text:#e8ecf2;--text2:#9ca3b4;--muted:#6b7280;--accent:#10b981;--gold:#f59e0b;--red:#ef4444;--blue:#3b82f6;--purple:#a78bfa;--radius:12px;--radius-sm:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:16px}
+.wrap{max-width:1080px;margin:0 auto}
+a.back{color:var(--text2);font-size:.78rem;text-decoration:none}a.back:hover{color:var(--text)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);margin:8px 0 14px}
+.brand h1{font-size:1.05rem;font-weight:800;background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand .sub{font-size:.72rem;color:var(--text2)}
+.stats{display:flex;gap:6px}.stat{text-align:center;padding:4px 11px;background:var(--surface);border-radius:var(--radius-sm)}
+.stat b{font-size:1.05rem;display:block;line-height:1.1}.stat span{font-size:.62rem;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.grid{display:grid;grid-template-columns:230px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:12px}
+.lbl{font-size:.66rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px}
+.qcard{display:flex;gap:9px;align-items:center;padding:9px 11px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);margin-bottom:7px;cursor:pointer}
+.qcard.active{background:var(--surface2);border-color:var(--purple)}
+.qbody{flex:1;min-width:0}.qname{font-weight:700;font-size:.86rem}.qreason{font-size:.72rem;color:var(--text2)}
+.qstage{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--bg2);color:var(--text2)}
+.pd-head{display:flex;align-items:center;gap:11px}
+.avatar{width:40px;height:40px;border-radius:50%;background:rgba(167,139,250,.16);color:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:700}
+.nm{font-size:1.05rem;font-weight:700}.psub{font-size:.78rem;color:var(--text2)}
+.pathpill{margin-left:auto;font-size:.68rem;font-weight:700;padding:4px 11px;border-radius:999px}
+.path-closed{background:rgba(16,185,129,.15);color:#7ff0c8}.path-open{background:rgba(245,158,11,.15);color:#ffd58a}
+.callinfo{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--text2);margin-top:9px;border-top:1px solid var(--border);padding-top:9px}
+.step{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.step:last-child{border-bottom:none}
+.step .box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:transparent;margin-top:1px}
+.step.done .box{background:var(--accent);border-color:var(--accent);color:#062a1e}
+.step .t{font-size:.86rem;font-weight:600}.step .d{font-size:.72rem;color:var(--text2)}
+.step.done .t{color:var(--text2);text-decoration:line-through}
+.bar{height:7px;background:var(--bg2);border-radius:999px;overflow:hidden;margin:6px 0 4px}.bar i{display:block;height:100%;width:0;background:var(--accent);transition:.4s}
+.btn{padding:10px 15px;border:none;border-radius:var(--radius-sm);font-weight:700;font-size:.85rem;cursor:pointer;background:var(--surface2);color:var(--text)}
+.btn.p{background:var(--purple);color:#160a2e}.btn.b{background:var(--blue);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cstatus{font-size:.78rem;color:var(--text2)}.cstatus.ok{color:#7ff0c8;font-weight:600}
+.note-input{width:100%;margin-top:8px;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.82rem}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--purple);color:#d6c7ff;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+/* ── mobile safety (Client Success is desktop-priority, still usable on phones) ── */
+@media(max-width:640px){
+  body{padding:12px}
+  header{flex-wrap:wrap;padding:11px 13px;gap:8px}
+  .brand h1{font-size:1.15rem}.brand .sub{font-size:.76rem}
+  .stats{width:100%;gap:6px}.stat{flex:1;padding:7px 4px}
+  .btn{padding:13px 15px}
+  .step .box{width:24px;height:24px}.step .t{font-size:.95rem}
+  .note-input{font-size:16px}
+}
+.hint{font-size:.74rem;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">← EPIC Suite</a> <button type="button" id="epicSuggBtn" class="epic-sugg-btn" style="display:none">💡 Suggest an improvement</button>
+  <header>
+    <div class="brand"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h1>🌟 EPIC Client Success</h1><span id="ver">v…</span></div><div class="sub">3B report calls &amp; onboarding — take care of the members</div></div>
+    <div class="stats">
+      <div class="stat"><b id="s-today">5</b><span>today</span></div>
+      <div class="stat"><b id="s-3b" style="color:var(--gold)">2</b><span>3B done</span></div>
+      <div class="stat"><b id="s-on" style="color:var(--accent)">3</b><span>onboarded</span></div>
+      <div class="stat"><b id="s-mem">128</b><span>members</span></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="lbl">👥 Members to take care of</div>
+      <div id="queueList"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="pd-head">
+          <div class="avatar" id="pAvatar">RW</div>
+          <div style="flex:1"><div class="nm" id="pName">Renee Webb</div><div class="psub" id="pSub">Webb Logistics · Annual · closed by Ana</div></div>
+          <span class="pathpill path-closed" id="pPath">Closed → onboarding</span>
+        </div>
+        <div class="callinfo"><span>📞 <b id="pPhone">(305) 555-0142</b></span><span id="pWhen">🕒 Onboarding call today 2:00pm</span></div>
+        <div class="hint" id="pathHint">Closed on the call — guide the MyFICO 3B pull, then onboard into the EPIC LIFE portal.</div>
+      </div>
+
+      <div class="panel">
+        <div class="lbl">🧾 15-min 3B call · pull the MyFICO 3-bureau report</div>
+        <div class="bar"><i id="bar3b"></i></div>
+        <div id="steps3b"></div>
+        <div class="row" style="margin-top:10px"><button class="btn p" id="done3b">✅ Mark 3B pulled</button><span class="cstatus" id="st3b">Walk them through it together on the call.</span></div>
+      </div>
+
+      <div class="panel" id="closerPanel">
+        <div class="lbl">🤝 Collaborate with the closer</div>
+        <div class="hint" id="closerHint"></div>
+        <input id="closerNote" class="note-input" placeholder="Note to the closer (context, red flags, what they still need)…">
+        <div class="row" style="margin-top:9px"><button class="btn b" id="loopCloser">🔗 Loop in the closer on Zoom</button><span class="cstatus" id="closerStatus"></span></div>
+      </div>
+
+      <div class="panel">
+        <div class="lbl">🚀 Onboarding · EPIC LIFE portal</div>
+        <div class="bar"><i id="barOn"></i></div>
+        <div id="stepsOn"></div>
+        <div class="row" style="margin-top:10px"><button class="btn p" id="doneOn">🎉 Complete onboarding &amp; next</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+function toast(t){var e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1900);}
+const MEMBERS=[
+ {id:'renee',ini:'RW',nm:'Renee Webb',sub:'Webb Logistics · Annual · closed by Ana',path:'closed',phone:'(305) 555-0142',when:'🕒 Onboarding call today 2:00pm',stage:'Needs 3B call',closer:'Ana'},
+ {id:'alicia',ini:'AG',nm:'Alicia Grant',sub:'Grant Realty · Pro · closed by Marco',path:'closed',phone:'(305) 555-0161',when:'🕒 Onboarding tomorrow 11:00am',stage:'Needs onboarding',closer:'Marco'},
+ {id:'dana',ini:'DL',nm:'Dana Liu',sub:'Liu Freight · on the fence · demo w/ Ana',path:'open',phone:'(214) 555-0143',when:'🕒 3B + closer call today 4:30pm',stage:'Needs 3B + closer',closer:'Ana'},
+ {id:'keoni',ini:'KM',nm:'Keoni Mahoe',sub:'Mahoe Landscaping · Monthly · closed by Ana',path:'closed',phone:'(808) 555-0143',when:'🕒 Onboarding Thu 9:00am',stage:'Needs 3B call',closer:'Ana'}
+];
+const S3B=[['Get them logged into MyFICO','create account or sign in together'],['Pull the 3-bureau report','Experian · Equifax · TransUnion'],['Review all 3 scores + key factors','note negatives to work on'],['Save the report to their EPIC LIFE portal','foundation for the FinFit plan']];
+const SON=[['Set up their EPIC LIFE portal login','send the welcome + portal link'],['Assign their coach + book first coaching call','warm intro'],['Walk the Credit Builder + Debt Exit plan','first 30-day actions'],['Confirm billing + what happens next','set expectations']];
+let cur=0, done3b={}, doneOn={};
+function renderQueue(){
+  $('queueList').innerHTML=MEMBERS.map((m,i)=>'<div class="qcard'+(i===cur?' active':'')+'" data-i="'+i+'"><div class="qbody"><div class="qname">'+m.nm+'</div><div class="qreason">'+m.sub.split('·')[0].trim()+'</div></div><span class="qstage">'+m.stage+'</span></div>').join('');
+  document.querySelectorAll('.qcard').forEach(c=>c.onclick=()=>{cur=+c.dataset.i;selectMember();});
+}
+function renderSteps(el,arr,st,key){
+  $(el).innerHTML=arr.map((s,i)=>'<div class="step'+(st[i]?' done':'')+'" data-k="'+key+'" data-i="'+i+'"><div class="box">✓</div><div><div class="t">'+s[0]+'</div><div class="d">'+s[1]+'</div></div></div>').join('');
+  document.querySelectorAll('.step[data-k="'+key+'"]').forEach(step=>step.onclick=()=>{ var i=+step.dataset.i; st[i]=!st[i]; renderSteps(el,arr,st,key); updateBars(); });
+}
+function updateBars(){
+  var a=S3B.filter((_,i)=>done3b[i]).length, b=SON.filter((_,i)=>doneOn[i]).length;
+  $('bar3b').style.width=Math.round(a/S3B.length*100)+'%'; $('barOn').style.width=Math.round(b/SON.length*100)+'%';
+  if(a===S3B.length){ $('st3b').className='cstatus ok'; $('st3b').textContent='✅ 3B report pulled + saved'; }
+}
+function selectMember(){
+  var m=MEMBERS[cur]; $('pAvatar').textContent=m.ini; $('pName').textContent=m.nm; $('pSub').textContent=m.sub; $('pPhone').textContent=m.phone; $('pWhen').textContent=m.when;
+  var closed=m.path==='closed'; $('pPath').className='pathpill '+(closed?'path-closed':'path-open'); $('pPath').textContent=closed?'Closed → onboarding':'Not closed → 3B + closer';
+  $('pathHint').textContent=closed?'Closed on the call — guide the MyFICO 3B pull, then onboard into the EPIC LIFE portal.':'Not closed yet — pull the 3B report on the call, then bring in the senior closer to close on the demo Zoom (member + partner).';
+  $('closerHint').textContent=closed?'Loop '+m.closer+' in only if a question comes up during onboarding.':'This is a 3B + closer call — pull the report, then hand to '+m.closer+' (senior closer) to close on the Zoom.';
+  $('loopCloser').textContent=closed?'🔗 Ping '+m.closer+' if needed':'🔗 Bring '+m.closer+' onto the Zoom';
+  $('closerStatus').textContent=''; $('closerStatus').className='cstatus'; $('closerNote').value='';
+  done3b={}; doneOn={}; renderSteps('steps3b',S3B,done3b,'a'); renderSteps('stepsOn',SON,doneOn,'b');
+  $('st3b').className='cstatus'; $('st3b').textContent='Walk them through it together on the call.'; updateBars();
+  document.querySelectorAll('.qcard').forEach((c,i)=>c.classList.toggle('active',i===cur));
+}
+$('done3b').onclick=()=>{ S3B.forEach((_,i)=>done3b[i]=true); renderSteps('steps3b',S3B,done3b,'a'); updateBars(); $('s-3b').textContent=+$('s-3b').textContent+1; toast('3B report pulled + saved 🧾'); };
+$('loopCloser').onclick=()=>{ $('closerStatus').className='cstatus ok'; $('closerStatus').textContent='✅ '+MEMBERS[cur].closer+' notified'+($('closerNote').value.trim()?' with your note':''); toast('Closer looped in 🔗'); };
+$('doneOn').onclick=()=>{ SON.forEach((_,i)=>doneOn[i]=true); renderSteps('stepsOn',SON,doneOn,'b'); updateBars(); $('s-on').textContent=+$('s-on').textContent+1;
+  cur=(cur+1)%MEMBERS.length; selectMember(); toast('🎉 Member onboarded — next'); };
+renderQueue(); selectMember();
+</script>
+
+<!-- ===== EPIC Suite: beta toggle + What's new (self-contained) ===== -->
+<style>
+#epicChip{position:fixed;top:9px;right:12px;z-index:1200;display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);box-shadow:0 2px 10px rgba(0,0,0,.4);user-select:none;white-space:nowrap}
+#epicChip:hover{border-color:var(--accent);color:var(--text)}
+#epicChip.beta{background:rgba(245,158,11,.18);border-color:var(--gold);color:#ffd58a;animation:epicPulse 2s ease-in-out infinite}
+@keyframes epicPulse{0%,100%{opacity:1}50%{opacity:.6}}
+body{padding-top:46px}
+.epic-modal{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.epic-modal.hidden{display:none}
+.epic-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:left}
+.epic-box h3{font-size:1.05rem;margin-bottom:6px}
+.epic-box p{font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.epic-box input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:1rem;letter-spacing:2px;text-align:center;text-transform:uppercase}
+.epic-box input:focus{outline:none;border-color:var(--gold)}
+.epic-err{color:var(--red);font-size:.76rem;margin-top:8px;min-height:16px;text-align:center}
+.epic-row{display:flex;gap:8px;margin-top:14px}
+.epic-row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:800;font-size:.85rem;cursor:pointer}
+.epic-go{background:var(--gold);color:#1a1200}.epic-cancel{background:var(--surface2);color:var(--text)}
+.epicv-box{max-width:520px;max-height:82vh;overflow:auto}
+.epicv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.epicv-head b{font-size:.98rem}.epic-x{cursor:pointer;color:var(--text2);font-size:1.1rem}
+.epicv-entry{padding:12px 0;border-bottom:1px solid var(--border)}.epicv-entry:last-child{border-bottom:none}
+.epicv-v{font-weight:800;color:var(--accent)}.epicv-d{font-size:.72rem;color:var(--muted);margin-left:8px}
+.epicv-entry ul{margin:8px 0 0;padding-left:18px}.epicv-entry li{font-size:.82rem;color:var(--text2);margin-bottom:6px;line-height:1.5}
+#ver{cursor:pointer;font-size:.68rem;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text2);white-space:nowrap;text-decoration:none}
+#ver:hover{border-color:var(--accent);color:var(--text)}
+#ver.new{color:#7ff0c8;background:rgba(16,185,129,.16);border-color:transparent;font-weight:700;animation:epicPulse 1.7s ease-in-out infinite}
+</style>
+<script>
+(function(){
+  var CODE='EPICBETA', KEY='epic_mode';
+  var E=window.EPIC=window.EPIC||{};
+  var FILE=/\.html?$/i.test(location.pathname);
+  E.isBeta=function(){ if(/\/beta(\/|$)/.test(location.pathname)) return true; if(FILE){try{return localStorage.getItem(KEY)==='beta'}catch(e){}} return false; };
+  function gotoBeta(){ try{localStorage.setItem(KEY,'beta')}catch(e){} if(FILE){location.reload();return;} location.href=location.pathname.replace(/(live|setter|referral|success)\/$/,'')+'beta/'; }
+  function gotoLive(){ try{localStorage.setItem(KEY,'live')}catch(e){} if(FILE){location.reload();return;} location.href=location.pathname.replace(/beta\/(live\/|setter\/|referral\/|success\/)?$/,''); }
+  var chip=document.createElement('div'); chip.id='epicChip';
+  function paint(){ if(E.isBeta()){chip.className='beta';chip.textContent='🧪 BETA · back to Live';chip.title="You're on the beta build — tap to return to Live";}
+    else{chip.className='';chip.textContent='🟢 Live · try beta';chip.title='Tap to enter the beta preview (code required)';} }
+  paint();
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>🧪 Try the beta</h3><p>Enter your beta code to preview the newest in-progress build across the EPIC Suite. Switch back to Live anytime from the chip in the corner.</p><input id="epicCodeIn" placeholder="beta code" autocomplete="off" spellcheck="false"><div class="epic-err" id="epicErr"></div><div class="epic-row"><button class="epic-cancel" id="epicCancel">Cancel</button><button class="epic-go" id="epicGo">Unlock beta</button></div></div>';
+  function showM(){m.classList.remove('hidden');var i=m.querySelector('#epicCodeIn');i.value='';m.querySelector('#epicErr').textContent='';setTimeout(function(){i.focus()},30);}
+  function hideM(){m.classList.add('hidden');}
+  function submitM(){var v=(m.querySelector('#epicCodeIn').value||'').trim().toUpperCase();
+    if(v===CODE){gotoBeta();}else{m.querySelector('#epicErr').textContent="That code didn't match. Try again.";}}
+  chip.onclick=function(){ if(E.isBeta()){gotoLive();} else {showM();} };
+  document.body.appendChild(chip); document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m)hideM();});
+  m.querySelector('#epicCancel').onclick=hideM; m.querySelector('#epicGo').onclick=submitM;
+  m.querySelector('#epicCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')submitM();});
+  // ---- What's new (per role) ----
+  var TITLE='EPIC Client Success', SEEN='epic_success_seen';
+  var NOTES=[
+  {v:'1.0.0',d:'2026-07-01',n:[
+   "Run the 15-minute MyFICO 3-bureau (3B) call with a guided checklist — log in, pull all 3 scores, review the key factors, and save the report to their EPIC LIFE portal.",
+   "Two paths handled: closed members go straight to onboarding; not-yet-closed members get the 3B pull, then you loop the senior closer onto the Zoom to close.",
+   "Onboarding checklist into the EPIC LIFE portal — portal login, coach assignment, Credit Builder + Debt Exit plan, billing confirmation — then advance to the next member.",
+   "New: a version badge + this What's-new panel, and a 🧪 beta preview you can unlock with a code — switch back to Live anytime from the chip in the corner.",
+  ]},
+  ];
+  var badge=document.getElementById('ver');
+  if(badge&&NOTES.length){
+    var v=NOTES[0].v; badge.textContent='v'+v+" · what's new";
+    var vm=document.createElement('div'); vm.className='epic-modal hidden';
+    vm.innerHTML='<div class="epic-box epicv-box"><div class="epicv-head"><b>📋 What\'s new — '+TITLE+'</b><span class="epic-x">✕</span></div><div>'+
+      NOTES.map(function(p){return '<div class="epicv-entry"><span class="epicv-v">v'+p.v+'</span><span class="epicv-d">'+p.d+'</span><ul>'+p.n.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>';}).join('')+'</div></div>';
+    document.body.appendChild(vm);
+    badge.onclick=function(){vm.classList.remove('hidden');try{localStorage.setItem(SEEN,v)}catch(e){}badge.classList.remove('new');};
+    vm.querySelector('.epic-x').onclick=function(){vm.classList.add('hidden');};
+    vm.addEventListener('click',function(e){if(e.target===vm)vm.classList.add('hidden');});
+    try{if(localStorage.getItem(SEEN)!==v)badge.classList.add('new');}catch(e){}
+  }
+})();
+</script>
+
+<!-- ===== EPIC Suite: suggestion box → Supabase (central review) ===== -->
+<style>
+.epic-sugg-btn{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;padding:5px 11px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);vertical-align:middle;margin-left:8px}
+.epic-sugg-btn:hover{border-color:var(--accent);color:var(--text)}
+.epic-sugg-ta{width:100%;min-height:120px;padding:11px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem;font-family:inherit;resize:vertical}
+.epic-sugg-ta:focus{outline:none;border-color:var(--accent)}
+.epic-sugg-ok{background:var(--accent);color:#062a1e}
+</style>
+<script>
+(function(){
+  var SB_URL='https://widdgynledwpqaqndtvz.supabase.co';
+  var SB_KEY='sb_publishable_YTOYoDxjm7MpIuvvSjwOyQ_ToGCW3PQ';
+  var ROLE='EPIC Client Success';
+  function say(t){ try{ if(typeof toast==='function'){toast(t);return;} }catch(e){}
+    var d=document.createElement('div'); d.textContent=t;
+    d.style.cssText='position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:700;z-index:1400';
+    document.body.appendChild(d); setTimeout(function(){d.remove();},2400); }
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>💡 Share an idea</h3><p>What would make <b>'+ROLE+'</b> better? Your suggestion goes straight to Bruce for review.</p><textarea class="epic-sugg-ta" id="epicSuggTa" placeholder="An idea, a bug, or something confusing…"></textarea><div class="epic-err" id="epicSuggErr"></div><div class="epic-row"><button class="epic-cancel" id="epicSuggCancel">Cancel</button><button class="epic-go epic-sugg-ok" id="epicSuggSend">Send to Bruce</button></div></div>';
+  function show(){ m.classList.remove('hidden'); var t=m.querySelector('#epicSuggTa'); t.value=''; m.querySelector('#epicSuggErr').textContent=''; setTimeout(function(){t.focus();},30); }
+  function hide(){ m.classList.add('hidden'); }
+  function send(){
+    var ta=m.querySelector('#epicSuggTa'); var txt=(ta.value||'').trim();
+    if(txt.length<3){ m.querySelector('#epicSuggErr').textContent='Add a little more detail.'; return; }
+    var b=m.querySelector('#epicSuggSend'); b.disabled=true; b.textContent='Sending…';
+    var meta={ page:location.pathname, mode:(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())?'beta':'live' };
+    fetch(SB_URL+'/rest/v1/epic_suggestions',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({role:ROLE,text:txt,meta:meta})})
+    .then(function(r){ if(r.ok){ hide(); say('💡 Thanks! Sent to Bruce for review.'); } else { m.querySelector('#epicSuggErr').textContent='Could not send ('+r.status+'). Try again.'; } })
+    .catch(function(){ m.querySelector('#epicSuggErr').textContent='Network error — try again.'; })
+    .finally(function(){ b.disabled=false; b.textContent='Send to Bruce'; });
+  }
+  if(!(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())) return;   // 💡 suggestion box is beta-only
+  var btn=document.getElementById('epicSuggBtn');
+  if(btn){ btn.style.display=''; } else { btn=document.createElement('button'); btn.id='epicSuggBtn'; btn.className='epic-sugg-btn'; btn.textContent='💡 Suggestion'; btn.style.cssText='position:fixed;left:12px;bottom:14px;z-index:1200'; document.body.appendChild(btn); }
+  btn.onclick=show;
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){ if(e.target===m) hide(); });
+  m.querySelector('#epicSuggCancel').onclick=hide; m.querySelector('#epicSuggSend').onclick=send;
+})();
+</script>
+</body>
+</html>

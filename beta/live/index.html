@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPIC Closer — Live Co-pilot Prototype</title>
+<style>
+:root{
+  --bg:#0a0e17;--bg2:#111827;--bg3:#1a2236;--surface:#1f2937;--surface2:#273349;
+  --border:#2d3a50;--text:#e8ecf2;--text2:#9ca3b4;--muted:#6b7280;
+  --accent:#10b981;--accent2:#059669;--gold:#f59e0b;--red:#ef4444;--blue:#3b82f6;
+  --radius:12px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:16px}
+.wrap{max-width:1080px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);margin:8px 0 14px}
+a.back{color:var(--text2);font-size:.78rem;text-decoration:none}a.back:hover{color:var(--text)}
+.brand{display:flex;align-items:center;gap:9px}
+.brand h1{font-size:1.05rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stats{display:flex;gap:6px}
+.stat{text-align:center;padding:4px 11px;background:var(--surface);border-radius:var(--radius-sm)}
+.stat b{font-size:1.05rem;display:block;line-height:1.1}.stat span{font-size:.62rem;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.cockpit{display:grid;grid-template-columns:232px minmax(0,1fr) 250px;gap:14px;align-items:start}
+@media(max-width:980px){.cockpit{grid-template-columns:1fr}}
+@media(max-width:640px){header{flex-wrap:wrap;gap:8px}.stats{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.stat{flex:0 0 auto}input,textarea{font-size:16px}}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:.82rem}.qhead .m{color:var(--text2);font-size:.72rem}
+.qcard{display:flex;gap:9px;align-items:center;padding:9px 11px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);margin-bottom:7px}
+.qcard.active{background:var(--surface2);border-color:var(--accent)}
+.qrank{font-size:.72rem;font-weight:800;color:var(--text2);min-width:13px}
+.qbody{flex:1;min-width:0}.qname{font-weight:700;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qreason{font-size:.72rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qcard.active .qreason{color:var(--accent)}
+.qscore{font-weight:800;font-size:.95rem}.qscore.hi{color:var(--accent)}.qscore.mid{color:var(--gold)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:12px}
+.pd-head{display:flex;align-items:center;gap:11px;margin-bottom:0}
+.avatar{width:40px;height:40px;border-radius:50%;background:rgba(16,185,129,.16);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700}
+.pd-head .nm{font-size:1.05rem;font-weight:700}.pd-head .sub{font-size:.78rem;color:var(--text2)}
+.pill{font-size:.7rem;font-weight:700;padding:3px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:5px}
+.pill.idle{background:rgba(156,163,180,.15);color:var(--text2)}
+.pill.live{background:rgba(16,185,129,.15);color:var(--accent)}
+.btn{padding:9px 15px;border:none;border-radius:var(--radius-sm);font-size:.85rem;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(1.12)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.call{background:var(--accent);color:#fff}.btn.end{background:var(--red);color:#fff}
+.btn.primary{background:var(--blue);color:#fff}.btn.ghost{background:transparent;border:1px solid var(--border)}
+.lbl{font-size:.66rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;min-height:26px}
+.chip{font-size:.72rem;font-weight:600;padding:4px 11px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;animation:pop .25s ease-out}
+.chip.pos{background:rgba(16,185,129,.15);color:#7ff0c8}
+.chip.soft{background:rgba(245,158,11,.15);color:#ffd58a}
+.chip.hard{background:rgba(239,68,68,.15);color:#ffb1b1}
+.chip.consent{background:rgba(239,68,68,.18);color:#ffb1b1;cursor:pointer;border-color:var(--red)}
+.chip.consent.done{background:rgba(16,185,129,.15);color:#7ff0c8;border-color:transparent;cursor:default}
+.chip .new{color:var(--accent);font-weight:800}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.bant{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.bcell{padding:8px 9px;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);transition:.3s}
+.bcell .k{font-size:.72rem;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:4px}
+.bcell .v{font-size:.72rem;color:var(--text2);margin-top:3px;min-height:15px}
+.bcell.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.5)}.bcell.ok .k,.bcell.ok .v{color:#7ff0c8}
+.bcell.warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.5)}.bcell.warn .k,.bcell.warn .v{color:#ffd58a}
+.closer{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--accent);background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px}
+.closer .stage{font-weight:800}
+.obj{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);border-radius:var(--radius-sm);padding:10px 12px;margin-top:10px}
+.obj .h{font-size:.74rem;font-weight:700;color:#ffd58a;display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.obj .r{background:var(--surface);border-radius:var(--radius-sm);padding:7px 10px;margin-bottom:6px}
+.obj .r .t{font-size:.6rem;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin-bottom:2px;font-weight:700}
+.obj .r .x{font-size:.8rem}
+.notes{font-size:.8rem;color:var(--text2);line-height:1.7;min-height:18px}
+.notes .n{animation:pop .25s}
+.disp{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.opt{padding:6px 12px;font-size:.78rem;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);cursor:pointer}
+.opt.sel{background:rgba(16,185,129,.15);border-color:var(--accent);color:#7ff0c8}
+.transcript{background:#06090f;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:.78rem;max-height:120px;overflow:auto;margin-top:4px}
+.tline{margin-bottom:4px}.tline .who{font-weight:700;color:var(--text2)}.tline.them .who{color:var(--accent)}.tline.you .who{color:var(--blue)}
+.hint{font-size:.74rem;color:var(--muted);text-align:center;margin-top:10px}
+.controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+.flag-alert{display:flex;align-items:flex-start;gap:8px;padding:8px 11px;background:rgba(245,158,11,.12);border-radius:var(--radius-sm);margin-top:9px;font-size:.76rem;color:#ffd58a;line-height:1.45}
+.muted{color:var(--text2)}
+#updbar{position:fixed;top:0;left:0;right:0;z-index:999;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 14px;font-size:.85rem;font-weight:600;box-shadow:0 2px 12px rgba(0,0,0,.45)}
+#updbar button{background:#fff;color:var(--blue);border:none;border-radius:6px;padding:6px 14px;font-weight:800;cursor:pointer}
+#updbar .x{cursor:pointer;opacity:.75;font-weight:400;font-size:1.1rem}
+body{padding-bottom:86px}
+@media(max-width:600px){body{padding-bottom:132px}}
+#bantBar{position:fixed;z-index:900;background:var(--bg2)}
+#bantBar.dock-bottom{left:0;right:0;bottom:0;border-top:1px solid var(--border);box-shadow:0 -4px 18px rgba(0,0,0,.5);padding:8px 12px}
+#bantBar.dock-bottom .bb-bar{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:10px}
+#bantBar.dock-bottom .bb-cells{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#bantBar.dock-left{left:0;top:88px;width:196px;border:1px solid var(--border);border-left:none;border-radius:0 12px 12px 0;box-shadow:6px 0 20px rgba(0,0,0,.5);padding:10px}
+#bantBar.dock-left .bb-bar{display:flex;flex-direction:column;gap:8px}
+#bantBar.dock-left .bb-cells{display:grid;grid-template-columns:1fr;gap:6px}
+#bantBar.dock-left .bb-ctl{order:-1;justify-content:flex-end}
+#bantBar.collapsed .bb-cells{display:none}
+#bantBar.dock-bottom.collapsed{padding:5px 12px}
+#bantBar.dock-left.collapsed{width:auto}
+.bb-lbl{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);white-space:nowrap}
+.bb-ctl{display:flex;gap:5px;flex:0 0 auto}
+.bb-btn{padding:4px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text2);cursor:pointer;font-size:.8rem;line-height:1;font-weight:700}
+.bb-btn:hover{border-color:var(--accent);color:var(--text)}
+@media(max-width:600px){#bantBar.dock-bottom .bb-cells{grid-template-columns:1fr 1fr}}
+.ph-compose .ph-cbtn{padding:8px 9px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.9rem;line-height:1;flex:0 0 auto}
+.ph-compose .ph-cbtn:hover{border-color:var(--accent)}
+.ph-compose .ph-cbtn.on{background:rgba(239,68,68,.22);border-color:var(--red)}
+.ph-compose .ph-cbtn.ready{border-color:var(--accent);color:#7ff0c8}
+#chatbar{position:fixed;left:0;right:0;bottom:0;z-index:900;background:var(--bg2);border-top:1px solid var(--border);padding:9px 14px 11px;box-shadow:0 -4px 18px rgba(0,0,0,.5)}
+#chatbar #aiStatus{max-width:1080px;margin:0 auto 6px;font-size:.72rem}
+#chatbar .inner{max-width:1080px;margin:0 auto;display:flex;gap:9px;align-items:center}
+#chatbar input{flex:1;padding:14px 16px;border-radius:11px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:1rem}
+#chatbar input:focus{outline:none;border-color:var(--accent)}
+#chatbar #sendBtn{padding:14px 24px;border:none;border-radius:11px;background:var(--blue);color:#fff;font-weight:800;font-size:.95rem;cursor:pointer}
+#chatbar #sendBtn:disabled{opacity:.5;cursor:not-allowed}
+#chatbar .kb{padding:14px 15px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--text);cursor:pointer;font-size:1.05rem}
+#chatbar .kb:hover{border-color:var(--accent)}
+#chatbar .kb.on{background:rgba(239,68,68,.22);border-color:var(--red);color:#fff}
+@media(max-width:600px){#chatbar #sendBtn{padding:14px 16px}}
+.close-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.close-grid{grid-template-columns:1fr}}
+.close-col{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px}
+.ct{font-size:.82rem;font-weight:700;margin-bottom:8px}
+.slots{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.slot{padding:7px 11px;font-size:.78rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.slot.sel{background:rgba(16,185,129,.18);border-color:var(--accent);color:#7ff0c8}
+.paybtn{width:100%;padding:10px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer;margin-bottom:8px}
+.paybtn:disabled{opacity:.6;cursor:not-allowed}
+.cstatus{font-size:.76rem;color:var(--text2)}
+.cstatus.ok{color:#7ff0c8;font-weight:600}
+.offer{font-size:.74rem;color:var(--text2);margin-bottom:8px}
+.mission{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:11px}
+.mhead{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;font-weight:700;margin-bottom:9px}
+.streak{font-size:.76rem;color:var(--gold);font-weight:700}
+.goals{display:grid;grid-template-columns:1fr;gap:8px}
+@media(max-width:600px){.goals{grid-template-columns:1fr}}
+.goal .glabel{font-size:.74rem;color:var(--text2);margin-bottom:5px;display:flex;justify-content:space-between}
+.goal.done .glabel{color:#7ff0c8}
+.bar{height:7px;background:var(--bg2);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+.callinfo{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--text2);margin-top:9px;border-top:1px solid var(--border);padding-top:9px}
+.qok{color:var(--accent);font-weight:600}.qmid{color:var(--gold);font-weight:600}.qbad{color:var(--red);font-weight:600}
+.phonecol{position:sticky;top:14px}
+.phone{background:#000;border-radius:26px;padding:9px 7px;border:1px solid #333;max-width:240px;margin:0 auto}
+.screen{background:#0d1117;border-radius:18px;min-height:470px;max-height:580px;overflow:hidden;display:flex;flex-direction:column}
+.ph-call{padding:11px;text-align:center;font-size:.78rem;font-weight:700;background:rgba(16,185,129,.16);color:#7ff0c8}
+.ph-call.ring{background:rgba(59,130,246,.18);color:#bcd4ff}
+.ph-appbar{padding:7px 10px;font-size:.72rem;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ph-callbtn{font-size:.7rem;font-weight:800;padding:5px 13px;border-radius:999px;background:var(--accent);color:#fff;border:none;cursor:pointer}
+.ph-callbtn:hover{filter:brightness(1.1)}
+.ph-callbtn.end{background:var(--red)}
+.ph-who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ph-callctl{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.ph-ctl{font-size:.82rem;padding:4px 6px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;line-height:1}
+.ph-ctl:hover{border-color:var(--accent)}
+.ph-ctl.on{background:rgba(239,68,68,.22);border-color:var(--red)}
+.ph-msgs{flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.ph-empty{color:var(--muted);font-size:.72rem;text-align:center;margin:auto;padding:20px}
+.bubble{max-width:88%;padding:8px 11px;border-radius:14px;font-size:.74rem;line-height:1.45}
+.bubble.them{align-self:flex-start;background:var(--surface2);border-bottom-left-radius:4px}
+.bubble.sys{align-self:center;background:transparent;color:var(--muted);font-size:.68rem}
+.bubble.pay{align-self:flex-start;background:rgba(59,130,246,.16);color:#bcd4ff;border-bottom-left-radius:4px}
+.bubble.ok{align-self:flex-start;background:rgba(16,185,129,.16);color:#7ff0c8;border-bottom-left-radius:4px}
+.bubble .lk{color:#7fb4ff;text-decoration:underline;word-break:break-all}
+.bubble .ttl{font-weight:700;display:block;margin-bottom:2px}
+/* rep's phone: outgoing texts + quick-send dock + compose */
+.bubble.me{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px}
+.bubble.me .lk{color:#dbe9ff}
+.ph-quick{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px;border-top:1px solid var(--border);background:var(--bg2)}
+.ph-quick button{display:flex;align-items:center;justify-content:center;gap:4px;padding:7px 4px;font-size:.68rem;font-weight:700;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer}
+.ph-quick button:hover{border-color:var(--accent)}
+.ph-quick button:active{transform:scale(.96)}
+.ph-quick kbd{font-size:.55rem;padding:1px 4px}
+.ph-compose{display:flex;gap:5px;padding:8px;border-top:1px solid var(--border);background:var(--bg2)}
+.ph-compose input{flex:1;min-width:0;padding:8px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.74rem}
+.ph-compose input:focus{outline:none;border-color:var(--accent)}
+.ph-compose button{padding:8px 12px;border:none;border-radius:999px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}
+.ph-legend{font-size:.62rem;color:var(--muted);text-align:center;margin-top:8px;line-height:1.7}
+.ph-legend b{color:var(--text2)}
+#phTimer{font-variant-numeric:tabular-nums}
+.bk-modes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.bkmode{padding:6px 9px;font-size:.7rem;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.bkmode.sel{background:rgba(16,185,129,.16);border-color:var(--accent);color:#7ff0c8}
+/* ===== SAY THIS hero band — the loudest thing on screen during a call ===== */
+.hero{border:1.5px solid var(--accent);background:linear-gradient(180deg,rgba(16,185,129,.07),var(--surface))}
+.hero-top{display:flex;align-items:center;gap:8px;font-size:.74rem;margin-bottom:9px}
+.closer-badge{color:var(--accent);font-weight:800;letter-spacing:.2px}
+.closer-badge .stage{font-weight:800}
+.say{font-size:1.06rem;line-height:1.5;font-weight:600;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 15px;min-height:26px;transition:.2s}
+.say.cue{border-color:rgba(59,130,246,.6);box-shadow:0 0 0 1px rgba(59,130,246,.25)}
+.say .qmark{color:var(--blue);font-weight:800;margin-right:6px}
+.obj{margin-top:11px}
+/* keyboard hints on disposition + Log&Next */
+kbd{font-family:inherit;font-size:.64rem;font-weight:800;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text2);line-height:1}
+.opt{display:inline-flex;align-items:center;gap:7px}
+.opt.sel kbd{color:#7ff0c8;border-color:var(--accent)}
+.btn.primary kbd{background:rgba(255,255,255,.22);border-color:transparent;color:#fff;margin-left:7px}
+.actionbar{border-color:rgba(59,130,246,.4)}
+/* not-qualified reason chips (pre-filled from heard signals) */
+.nq-reasons{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+.rz{padding:6px 11px;font-size:.76rem;border-radius:999px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.rz:hover{border-color:var(--red)}
+.rz.pre{border-style:dashed;border-color:rgba(245,158,11,.6);color:#ffd58a}
+.rz.sel{background:rgba(239,68,68,.18);border-color:var(--red);color:#ffb1b1}
+.hidden{display:none!important}
+/* ===== What's new / changelog ===== */
+#ver{cursor:pointer}
+.ver-badge{font-size:.68rem;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);text-decoration:none}
+.ver-badge:hover{border-color:var(--accent);color:var(--text)}
+#ver.ver-new{color:#7ff0c8;text-decoration:none;background:rgba(16,185,129,.16);border-color:transparent;padding:3px 10px;border-radius:999px;font-weight:700;animation:pulseNew 1.7s ease-in-out infinite}
+@keyframes pulseNew{0%,100%{opacity:1}50%{opacity:.5}}
+.cl-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.cl-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:520px;width:100%;max-height:82vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.cl-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.cl-head b{font-size:.98rem}
+.cl-x{cursor:pointer;color:var(--text2);font-size:1.1rem;padding:2px 6px}
+.cl-x:hover{color:var(--text)}
+.cl-body{padding:4px 16px 14px}
+.cl-entry{padding:13px 0;border-bottom:1px solid var(--border)}
+.cl-entry:last-child{border-bottom:none}
+.cl-v{font-weight:800;color:var(--accent)}
+.cl-d{font-size:.72rem;color:var(--muted);margin-left:8px}
+.cl-entry ul{margin:8px 0 0;padding-left:18px}
+.cl-entry li{font-size:.82rem;color:var(--text2);margin-bottom:6px;line-height:1.5}
+/* ===== v1.2.0: mini buttons, objection bank, history, note input ===== */
+.mini-btn{font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.mini-btn:hover{border-color:var(--accent);color:var(--text)}
+.btn.vm{background:var(--bg3);color:#ffd58a;border:1px solid rgba(245,158,11,.4)}
+.obj-search{width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem}
+.obj-search:focus{outline:none;border-color:var(--accent)}
+.ob-q{font-weight:700;font-size:.86rem;color:var(--text);margin-bottom:7px}
+.ob-r{background:var(--bg2);border-radius:var(--radius-sm);padding:7px 10px;margin-bottom:6px;font-size:.8rem;color:var(--text2)}
+.ob-t{display:block;font-size:.6rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.hist-toggle{cursor:pointer;color:var(--blue);font-weight:600}
+.hist-toggle:hover{text-decoration:underline}
+.hist-box{margin-top:9px;border-top:1px solid var(--border);padding-top:9px}
+.hist-item{display:flex;gap:10px;font-size:.75rem;color:var(--text2);padding:4px 0}
+.hist-item .hd{color:var(--muted);min-width:52px;font-weight:600}
+.bcell{cursor:pointer}
+.bcell .v[contenteditable="true"]{outline:1px solid var(--accent);border-radius:4px;padding:0 3px;color:var(--text)}
+.bcell.bad{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.5)}
+.bcell.bad .k,.bcell.bad .v{color:#ffb1b1}
+.bant-menu{position:fixed;z-index:1100;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.55);padding:5px;min-width:176px}
+.bant-menu button{display:block;width:100%;text-align:left;padding:8px 11px;font-size:.8rem;border:none;background:transparent;color:var(--text);cursor:pointer;border-radius:7px}
+.bant-menu button:hover{background:var(--bg2)}
+#closer-stage{cursor:pointer}
+.note-input{width:100%;margin-top:9px;padding:8px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.82rem}
+.note-input:focus{outline:none;border-color:var(--accent)}
+/* ===== v1.3.0: focus-driven worklist (left rail) ===== */
+.mission .mhead{font-size:.8rem;margin-bottom:8px}
+.streak{font-size:.68rem}
+.goal .glabel{font-size:.72rem}
+.focusbar{margin:1px 0 11px}
+.focus-lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:6px;font-weight:700}
+.focus-chips{display:flex;gap:5px;flex-wrap:wrap}
+.focus-chip{font-size:.71rem;font-weight:600;padding:5px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:.12s}
+.focus-chip:hover{border-color:var(--accent);color:var(--text)}
+.focus-chip.on{background:rgba(16,185,129,.16);border-color:var(--accent);color:#7ff0c8}
+.qhead .m{cursor:default}
+.qscore.low{color:var(--text2)}
+.qcard{cursor:pointer}
+/* v1.6.0: Hawaii toggle, calendar picker, payment tiers */
+.hi-toggle{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2);cursor:pointer;margin-top:9px}
+.hi-toggle input{accent-color:var(--accent);width:15px;height:15px}
+.cal-dates{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
+.cal-date{text-align:center;padding:5px 2px;font-size:.63rem;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer;line-height:1.3}
+.cal-date.wknd{opacity:.55}
+.content-list{display:flex;flex-direction:column;gap:6px}
+.content-item{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;text-align:left;width:100%;color:var(--text)}
+.content-item:hover{border-color:var(--accent)}
+.content-item .ci{font-size:1.3rem;line-height:1}
+.content-item .ct-t{font-weight:700;font-size:.84rem}
+.content-item .ct-s{font-size:.7rem;color:var(--text2)}
+.cal-date .dow{display:block;font-weight:800;color:var(--text)}
+.cal-date.sel{background:rgba(16,185,129,.16);border-color:var(--accent);color:#7ff0c8}
+.cal-date.sel .dow{color:#7ff0c8}
+.cal-times{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.cal-time{padding:6px 10px;font-size:.74rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.cal-time.sel{background:rgba(16,185,129,.18);border-color:var(--accent);color:#7ff0c8}
+.plan-chips{display:flex;gap:5px;margin-bottom:8px}
+.plan{flex:1;padding:7px 4px;font-size:.72rem;font-weight:700;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.plan.sel{background:rgba(59,130,246,.18);border-color:var(--blue);color:#bcd4ff}
+.plan-rec{font-size:.76rem;color:#ffd58a;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:8px;padding:7px 10px;margin-bottom:9px}
+.plan-price{font-weight:800;font-size:.98rem;margin-bottom:7px;color:var(--text)}
+.plan-incl{margin:0 0 4px;padding-left:17px;max-height:230px;overflow:auto}
+.plan-incl li{font-size:.77rem;color:var(--text2);margin-bottom:4px;line-height:1.4}
+/* v1.8.0: dock actions open pop-ups (pay tier / booking / video-call platform) */
+.cl-modal.pop-top{z-index:1100}
+.confirm-actions{display:flex;gap:9px;margin-top:15px}
+.confirm-actions .btn{flex:1;justify-content:center}
+.cl-modal.pop-left{justify-content:flex-start}
+.cl-box.pop-sm{max-width:360px}
+.cl-box.pop-md{max-width:430px}
+.close-cta{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.mini-cta{flex:0 1 auto;min-width:96px;font-size:.78rem;font-weight:700;padding:9px 11px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;text-align:center}
+.close-rec{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+.cr-tier{font-weight:800;font-size:.98rem}
+.cr-price{font-weight:600;font-size:.8rem;color:var(--text2);margin-left:6px}
+.cr-incl{margin:7px 0 0;padding-left:17px}
+.cr-incl li{font-size:.76rem;color:var(--text2);margin-bottom:3px;line-height:1.4}
+.close-ready{margin:10px 0;padding:7px 11px;border-radius:8px;font-size:.8rem;font-weight:700}
+.close-ready.ready{background:rgba(16,185,129,.14);color:#7ff0c8}
+.close-ready.qualify{background:rgba(245,158,11,.14);color:#ffd58a}
+.close-ready.walk{background:rgba(239,68,68,.14);color:#ffb1b1}
+.close-line{margin-bottom:11px}
+.cl-lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:700;margin-bottom:4px}
+.cl-say{font-size:.9rem;line-height:1.5;color:var(--text);background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:9px 12px}
+.cta-primary{flex:1 1 100%;padding:12px 16px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:800;font-size:.92rem;cursor:pointer}
+.cta-primary.pay{background:var(--blue)}
+.cta-primary.walk{background:var(--red)}
+/* contact-card email + email popup */
+.email-link{cursor:pointer;color:var(--blue);font-weight:600}
+.email-link:hover{text-decoration:underline}
+.em-templates{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.em-tpl{padding:7px 11px;font-size:.76rem;font-weight:700;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+.em-tpl.sel{background:rgba(59,130,246,.18);border-color:var(--blue);color:#bcd4ff}
+.em-input,.em-body{width:100%;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.84rem;font-family:inherit;margin-bottom:8px}
+.em-input:focus,.em-body:focus{outline:none;border-color:var(--accent)}
+.em-body{line-height:1.5;resize:vertical}
+/* BANK personality read (close-the-deal card) */
+.bank-types{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.bank-t{padding:9px 10px;font-size:.8rem;font-weight:700;border-radius:9px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;text-align:left}
+.bank-t:hover{border-color:var(--accent)}
+.bank-t.sel{background:var(--surface2);border-color:var(--accent)}
+.bank-read{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px}
+.bank-name{font-weight:800;font-size:1rem;margin-bottom:6px}
+.bank-drive,.bank-pitch{font-size:.8rem;color:var(--text2);line-height:1.5;margin-bottom:5px}
+.bank-drive b,.bank-pitch b{color:var(--text)}
+.bank-auto{font-size:.72rem;font-weight:700;color:#7ff0c8;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.35);border-radius:7px;padding:5px 9px;margin-bottom:8px}
+.mini-cta:hover{border-color:var(--accent)}
+.vid-choices{display:flex;gap:9px}
+.vidbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;font-weight:700;font-size:.92rem}
+.vidbtn:hover{border-color:var(--accent);background:var(--bg2)}
+.vidbtn .vi{font-size:1.7rem;line-height:1}
+.vidbtn small{display:block;font-weight:500;font-size:.66rem;color:var(--text2);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a href="../" class="back">← EPIC Suite</a> <button type="button" id="epicSuggBtn" class="epic-sugg-btn" style="display:none">💡 Suggest an improvement</button>
+  <header>
+    <div class="brand"><h1>📞 EPIC Closer</h1>
+      <span id="status" class="pill idle">● idle</span>
+      <span id="ver" class="ver-badge muted">v…</span></div>
+    <div class="stats">
+      <div class="stat"><b id="s-dials">22</b><span>dials</span></div>
+      <div class="stat"><b id="s-conn" style="color:var(--accent)">7</b><span>connects</span></div>
+      <div class="stat"><b id="s-book" style="color:var(--accent)">2</b><span>booked</span></div>
+      <div class="stat"><b id="s-closed" style="color:var(--accent)">1</b><span>closed</span></div>
+      <div class="stat"><b id="s-rev" style="color:var(--gold)">$3.5k</b><span>revenue</span></div>
+      <div class="stat"><b id="s-queue">41</b><span>queue</span></div>
+    </div>
+  </header>
+
+  <!-- call controls now live on the phone; these stay for wiring only -->
+  <div class="controls" style="display:none">
+    <button id="startBtn" class="btn call">▶ Start call</button>
+    <button id="muteBtn" class="btn ghost">🔊 Voice on</button>
+    <button id="vmBtn" class="btn vm">📩 No answer · drop VM</button>
+  </div>
+
+  <div class="cockpit">
+    <div class="leftcol">
+      <div class="mission">
+        <div class="mhead"><span>🎯 Today</span><span class="streak">🔥 4-day · 1,840 pts</span></div>
+        <div class="goals">
+          <div class="goal" id="goalDials"><div class="glabel"><span>Dials</span><span id="gd">0/40</span></div><div class="bar"><i id="bd"></i></div></div>
+          <div class="goal" id="goalConn"><div class="glabel"><span>Connects</span><span id="gc">0/10</span></div><div class="bar"><i id="bc"></i></div></div>
+          <div class="goal" id="goalBook"><div class="glabel"><span>Booked</span><span id="gb">0/3</span></div><div class="bar"><i id="bb"></i></div></div>
+        </div>
+      </div>
+      <div class="focusbar">
+        <div class="focus-lbl">🎯 Focus — sort the queue</div>
+        <div id="focusChips" class="focus-chips"></div>
+        <label class="hi-toggle"><input type="checkbox" id="hiToggle"> 🌺 Hawaii only <span class="muted" style="font-size:.64rem">· 1-party consent</span></label>
+      </div>
+      <div class="qhead"><b>Queue</b><span class="m" id="qCount">—</span></div>
+      <div id="queueList"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="pd-head">
+          <div class="avatar" id="pAvatar">RW</div>
+          <div style="flex:1"><div class="nm" id="pName">Renee Webb</div><div class="sub" id="pSub">Webb Logistics · Owner · EPIC LIFE membership · 📍 Florida</div></div>
+          <button id="callBtn" class="btn call" style="display:none" disabled>📞 Call</button>
+        </div>
+        <div class="callinfo">
+          <span><span id="locLabel">📍 Florida</span> · <span id="locTime">—</span> · <span id="tzStatus">—</span></span>
+          <span>📞 Caller ID <b id="callerId">(305) 555-0142</b> · local presence ✓</span>
+          <span id="emailLink" class="email-link" title="Draft an email — proposal, event invite, or game">✉️ —</span>
+          <span id="histToggle" class="hist-toggle">🕐 History (0) ▾</span>
+        </div>
+        <div id="histBox" class="hist-box hidden"></div>
+      </div>
+
+      <!-- Signals & flags + BANT + live transcript — one box above the closer -->
+      <div class="panel">
+        <div class="lbl">🏷️ Signals &amp; flags <span class="muted" style="text-transform:none;letter-spacing:0">· live from the call · consent shows here too · BANT pinned below ↓</span></div>
+        <div id="chips" class="chips"><span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span></div>
+        <div id="flagAlert"></div>
+        <div class="lbl" style="margin-top:12px">🎙️ Live transcript <span class="muted" style="text-transform:none;letter-spacing:0">· what the AI is hearing</span></div>
+        <div id="transcript" class="transcript"><span class="muted">—</span></div>
+      </div>
+
+      <!-- SAY THIS closer + live notes -->
+      <div class="panel hero">
+        <div class="hero-top">
+          <span class="closer-badge">🤖 CLOSER · <span id="closer-stage" class="stage" title="tap to advance stage">Clarify</span></span>
+          <button id="objBankBtn" class="mini-btn" title="Search the objection rebuttal bank">📚 Objections</button>
+          <span class="muted" id="closer-hint" style="margin-left:auto">listening…</span>
+        </div>
+        <div id="sayLine" class="say"><span class="muted" style="font-size:.82rem">Your suggested line appears here as the call moves — glance, say it, keep talking.</span></div>
+        <div id="objBox"></div>
+        <div class="lbl" style="margin-top:12px">📝 Live notes <span class="muted" style="text-transform:none;letter-spacing:0">· auto-captured · type your own while you talk</span></div>
+        <div id="notes" class="notes"><span class="muted" style="font-size:.76rem">…</span></div>
+        <input id="noteInput" class="note-input" placeholder="+ add a note…" autocomplete="off">
+      </div>
+
+      <!-- Close the deal — controls open as pop-ups (from here or the phone dock) -->
+      <div class="panel" id="closePanel">
+        <div class="lbl">🧠 Close the deal <span class="muted" style="text-transform:none;letter-spacing:0">· read their BANK personality, then tailor the close</span></div>
+        <div class="bank-types" id="bankTypes">
+          <button class="bank-t" data-b="B">🔵 Blueprint</button>
+          <button class="bank-t" data-b="A">🔴 Action</button>
+          <button class="bank-t" data-b="N">🟢 Nurturing</button>
+          <button class="bank-t" data-b="K">🟡 Knowledge</button>
+        </div>
+        <div class="bank-read" id="bankRead"><span class="muted" style="font-size:.8rem">Tap the prospect's dominant type to tailor your close.</span></div>
+      </div>
+
+      <!-- End-of-call action bar — at the end of the page -->
+      <div class="panel actionbar">
+        <div class="lbl">Outcome <span class="muted" style="text-transform:none;letter-spacing:0">· auto-reads from the call · press 1–6 to change, ↵ to log &amp; jump to the next prospect</span></div>
+        <div class="disp" id="disp">
+          <div class="opt" data-o="won"><kbd>1</kbd> 🏆 Won</div>
+          <div class="opt" data-o="booked"><kbd>2</kbd> 📅 Booked</div>
+          <div class="opt" data-o="callback"><kbd>3</kbd> 🔁 Callback</div>
+          <div class="opt" data-o="connected"><kbd>4</kbd> ✅ Connected</div>
+          <div class="opt" data-o="notint"><kbd>5</kbd> 🙅 Not interested</div>
+          <div class="opt" data-o="nq"><kbd>6</kbd> 🚫 Not qualified ▾</div>
+          <button id="nextBtn" class="btn primary" style="margin-left:auto">Log &amp; Next<kbd>↵</kbd></button>
+        </div>
+        <div id="nqReasons" class="nq-reasons hidden"></div>
+      </div>
+
+    </div>
+
+    <div class="phonecol">
+      <div class="lbl" style="margin-bottom:8px">📱 Your phone <span class="muted" style="text-transform:none;letter-spacing:0">· call &amp; text the prospect</span></div>
+      <div class="phone"><div class="screen">
+        <div id="phCall" class="ph-call hidden"></div>
+        <div class="ph-appbar"><span class="ph-who">💬 <span id="phWho">Renee Webb</span></span><span class="ph-callctl"><button id="phMute" class="ph-ctl" title="Mute the prospect's voice (M)">🔊</button><button id="phVm" class="ph-ctl" title="No answer → drop a voicemail &amp; go next">📩</button><button id="phCallBtn" class="ph-callbtn">📞 Call</button></span></div>
+        <div id="phMsgs" class="ph-msgs"><div class="ph-empty">Your thread with the prospect — text or call.</div></div>
+        <div class="ph-quick" id="phQuick">
+          <button data-q="pay" title="Payment — pick a price point, then send">💳 Pay link <kbd>P</kbd></button>
+          <button data-q="book" title="Booking — pick a day + time">📅 Booking <kbd>B</kbd></button>
+          <button data-q="content" title="Send content to the prospect">📎 Content <kbd>C</kbd></button>
+          <button data-q="zoom" title="Video call — Zoom or Microsoft Teams">🎥 Zoom <kbd>Z</kbd></button>
+        </div>
+        <div class="ph-compose">
+          <button id="phKey" class="ph-cbtn" title="Connect the AI prospect (paste your key)">🔑</button>
+          <button id="phMic" class="ph-cbtn" title="Talk to the prospect with your mic">🎤</button>
+          <input id="phInput" type="text" placeholder="Text the prospect…" autocomplete="off">
+          <button id="phSend" title="Send">➤</button>
+        </div>
+      </div></div>
+      <div class="ph-legend"><b>Hotkeys</b> · <b>P</b> pay · <b>B</b> booking · <b>C</b> content · <b>Z</b> zoom · <b>T</b> text · <b>M</b> mute</div>
+    </div>
+  </div>
+  <div class="hint">Prototype — simulates the live-listening loop for the team demo. Real version: Twilio audio → Deepgram → Claude → this UI.</div>
+</div>
+
+<!-- floating BANT card (pinned bottom) -->
+<div id="bantBar" class="dock-bottom">
+  <div class="bb-bar">
+    <span class="bb-lbl" id="bbLbl">✅ BANT</span>
+    <div class="bb-cells" id="bbCells">
+      <div class="bcell" id="b-budget"><div class="k">💰 Budget ▾</div><div class="v">—</div></div>
+      <div class="bcell" id="b-auth"><div class="k">👤 Authority ▾</div><div class="v">—</div></div>
+      <div class="bcell" id="b-need"><div class="k">🎯 Need ▾</div><div class="v">—</div></div>
+      <div class="bcell" id="b-time"><div class="k">⏱️ Timeline ▾</div><div class="v">—</div></div>
+    </div>
+    <span class="bb-ctl">
+      <button id="bbDock" class="bb-btn" title="Move to left">⬅</button>
+      <button id="bbCollapse" class="bb-btn" title="Collapse">▾</button>
+    </span>
+  </div>
+</div>
+
+<!-- AI-tester controls now live on the phone; this stays hidden for wiring -->
+<div id="chatbar" style="display:none">
+  <div id="aiStatus" class="muted"></div>
+  <div class="inner">
+    <button id="keyBtn" class="kb" title="Connect AI prospect">🔑</button>
+    <button id="micBtn" class="kb" title="Talk to Renee with your mic">🎤</button>
+    <input id="chatInput" type="text" placeholder="💬 Type, or tap 🎤 to talk to Renee" autocomplete="off">
+    <button id="sendBtn">Send ▸</button>
+  </div>
+</div>
+
+<div id="clModal" class="cl-modal hidden">
+  <div class="cl-box">
+    <div class="cl-head"><b>📋 What's new — EPIC Closer</b><span id="clClose" class="cl-x" title="close">✕</span></div>
+    <div id="clBody" class="cl-body"></div>
+  </div>
+</div>
+
+<div id="objModal" class="cl-modal hidden">
+  <div class="cl-box">
+    <div class="cl-head"><b>📚 Objection bank <span class="muted" style="font-weight:400;font-size:.8rem">· agree → reframe → story</span></b><span id="objModalClose" class="cl-x" title="close">✕</span></div>
+    <div style="padding:12px 16px 4px"><input id="objSearch" class="obj-search" placeholder="Search… price, partner, time, think about it, busy"></div>
+    <div id="objBankBody" class="cl-body"></div>
+  </div>
+</div>
+
+<!-- 💳 Collect payment — pops up from the phone dock / close-the-deal -->
+<div id="payPop" class="cl-modal hidden">
+  <div class="cl-box pop-md">
+    <div class="cl-head"><b>💳 EPIC LIFE — pick a plan</b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div id="planRec" class="plan-rec"></div>
+      <div class="plan-chips" id="planChips">
+        <button class="plan sel" data-p="monthly">Monthly</button>
+        <button class="plan" data-p="annual">Annual ★</button>
+        <button class="plan" data-p="pro">Pro</button>
+      </div>
+      <div class="offer" id="planDesc"></div>
+      <button id="payBtn" class="paybtn">Text the checkout link</button>
+      <div id="payStatus" class="cstatus">No link sent yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 📅 Book the 3B call — pops up to the LEFT -->
+<div id="bookPop" class="cl-modal pop-left hidden">
+  <div class="cl-box pop-md">
+    <div class="cl-head"><b>📅 Booking</b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div class="bk-modes" id="bkModes">
+        <button class="bkmode" data-m="callback">📞 Schedule callback</button>
+        <button class="bkmode sel" data-m="closed">✅ Closed → 3B onboarding</button>
+        <button class="bkmode" data-m="open">🔁 Not closed → 3B + closer</button>
+      </div>
+      <div class="offer" id="bkDesc"></div>
+      <div class="cal-dates" id="calDates"></div>
+      <div class="cal-times" id="calTimes"></div>
+      <div id="bookStatus" class="cstatus">Pick a day in the next 2 weeks, then a time.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 📹 Video call — pick the platform, we text the invite -->
+<div id="videoPop" class="cl-modal hidden">
+  <div class="cl-box pop-sm">
+    <div class="cl-head"><b>🎥 Send a video-call invite</b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div class="muted" style="font-size:.8rem;margin-bottom:11px">Pick how you'll meet — we'll text the invite to the prospect.</div>
+      <div class="vid-choices">
+        <button class="vidbtn" data-v="zoom"><span class="vi">🔗</span>Zoom<small>zoom.us room</small></button>
+        <button class="vidbtn" data-v="teams"><span class="vi">💠</span>Teams<small>Microsoft Teams link</small></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 📎 Send content — pick what to text the prospect -->
+<div id="contentPop" class="cl-modal hidden">
+  <div class="cl-box pop-md">
+    <div class="cl-head"><b>📎 Send content</b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div class="muted" style="font-size:.8rem;margin-bottom:11px">Pick what to text the prospect.</div>
+      <div id="contentList" class="content-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Confirm-before-send (shown on mobile so a stray tap can't text the prospect) -->
+<div id="confirmPop" class="cl-modal pop-top hidden">
+  <div class="cl-box pop-sm">
+    <div class="cl-head"><b id="confirmTitle">Confirm</b><span class="cl-x" id="confirmX" title="cancel">✕</span></div>
+    <div class="cl-body">
+      <div id="confirmMsg" style="font-size:.9rem;line-height:1.55"></div>
+      <div class="confirm-actions">
+        <button class="btn ghost" id="confirmNo">Cancel</button>
+        <button class="btn primary" id="confirmYes">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BANT quick-prequalify dropdown (positioned under the tapped cell) -->
+<!-- ✉️ Email — draft with a template, then send -->
+<div id="emailPop" class="cl-modal hidden">
+  <div class="cl-box pop-md">
+    <div class="cl-head"><b>✉️ Email <span id="emTo" class="muted" style="font-weight:400;font-size:.8rem">—</span></b><span class="cl-x" data-pop-close title="close">✕</span></div>
+    <div class="cl-body">
+      <div class="em-templates" id="emTemplates">
+        <button class="em-tpl sel" data-t="proposal">📄 Proposal</button>
+        <button class="em-tpl" data-t="event">📅 Event invite</button>
+        <button class="em-tpl" data-t="game">🎮 Play the game</button>
+      </div>
+      <input id="emSubject" class="em-input" placeholder="Subject" autocomplete="off">
+      <textarea id="emBody" class="em-body" rows="8"></textarea>
+      <button id="emSend" class="paybtn">Send email</button>
+      <div id="emStatus" class="cstatus">Draft ready — tweak it, then send.</div>
+    </div>
+  </div>
+</div>
+
+<div id="bantMenu" class="bant-menu hidden"></div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+/* ===== Changelog — newest first. Bump this on every promote to live.
+   version.json {"v":...} must match PATCH_NOTES[0].v so the update bar fires. ===== */
+const PATCH_NOTES=[
+{v:'1.20.0',d:'2026-07-02',n:[
+ "Beta is now a full parallel build of the entire EPIC Suite — the 🧪 chip takes you into a complete beta version of every tool (hub, Closer, Setter, Referral, Client Success) and back to Live in one tap.",
+]},
+{v:'1.19.2',d:'2026-07-02',n:[
+ "Unified the header with the rest of the EPIC Suite — matching mixed-case title style and a ← EPIC Suite / 💡 Suggest row up top (look-only, nothing functional changed).",
+]},
+{v:'1.19.1',d:'2026-07-02',n:[
+ "Added a ← EPIC Suite link up top so you can hop back to the other tools.",
+ "Mobile polish — the header and stats now fit small screens without changing the desktop layout.",
+]},
+{v:'1.19.0',d:'2026-07-02',n:[
+ "🧪 Beta preview across the whole EPIC Suite — a chip in the top-right corner flips you between the stable Live build and the newest Beta. Enter the beta code once to try Beta; tap the chip anytime to return to Live.",
+ "💡 Suggestion box (Beta only) — while you're in Beta, a “💡 Suggest” button in the header sends your ideas or bugs straight to Bruce for review.",
+ "The suite moved to a cleaner address — brucelin-tla.github.io/epic-suite (old links redirect).",
+]},
+{v:'1.18.0',d:'2026-06-30',n:[
+ "The outcome now auto-selects from the call — it reads the conversation and sets 🏆 Won (on payment) / 📅 Booked (on a booking) / 🔁 Callback / ✅ Connected / 🙅 Not interested / 🚫 Not qualified (hard flag or can't-afford). Tap 1–6 anytime to override.",
+ "Two new outcomes: 🏆 Won (paid deal, distinct from a booked appointment) and 🙅 Not interested (they qualify but declined, distinct from Not qualified).",
+]},
+{v:'1.17.0',d:'2026-06-30',n:[
+ "The BANK personality on the Close-the-deal card now auto-reads from the conversation — as the prospect talks, it detects whether they're 🔵 Blueprint / 🔴 Action / 🟢 Nurturing / 🟡 Knowledge and highlights it (AI-refined when your 🔑 key is connected). You can still tap any type to override.",
+]},
+{v:'1.16.0',d:'2026-06-30',n:[
+ "The version / “what's new” badge moved up to the header (next to the title) so it's easy to spot.",
+ "You can move the floating BANT card now — tap ⬅ to dock it to the left side or ⬇ back to the bottom, and ▾ (or the BANT label) to collapse it out of the way. Your choice is remembered.",
+]},
+{v:'1.15.0',d:'2026-06-30',n:[
+ "Email the prospect from the contact card — tap the ✉️ address to open a draft with one-tap templates: 📄 Proposal (auto-filled with their recommended plan), 📅 Event invite (EPIC Saturday), and 🎮 Play the Entrepreneur Paradise game. Tweak, then send (confirm first).",
+ "Close-the-deal is now a BANK personality read — tap the prospect's dominant type (🔵 Blueprint · 🔴 Action · 🟢 Nurturing · 🟡 Knowledge) to see what drives them, how to close them, and a tailored closing line. Removed the duplicate action buttons (they live on the phone).",
+]},
+{v:'1.14.0',d:'2026-06-30',n:[
+ "Removed the bottom chat bar and pinned a floating BANT card there instead — Budget / Authority / Need / Timeline stay visible while you scroll, and you can tap any to prequalify (the dropdown opens upward).",
+ "The AI 🔑 connect and 🎤 mic moved onto the phone's message row, next to the text box.",
+]},
+{v:'1.13.0',d:'2026-06-30',n:[
+ "Close-the-deal is now a live decision layer, not just launchers. It reads the call and shows: the recommended plan for THIS prospect (with the inclusions that matter to them), a green/amber/red readiness check (BANT filled? can they afford it? any hard flag?), an assumptive closing line to say, and one primary action — Take payment, Book the 3B call, or Mark not qualified — that updates as the call develops.",
+]},
+{v:'1.12.0',d:'2026-06-30',n:[
+ "Real EPIC LIFE plans + inclusions everywhere. The Pay-link popup is now a mini pitch deck: Monthly ($800 to start, then $300/mo), Annual ($3,500 to start, then $3,000/yr — best value), Pro ($9,700/yr — premium), each with its real what's-included list.",
+ "It suggests the most relevant tier for the prospect — budget-tight → Monthly, real-estate / business build-out cues → Pro, otherwise Annual (best value).",
+ "The CLOSER co-pilot, the AI prospect (voice + text), and the Content picker now all use the real offer — coaching, objections, and content are grounded in the actual product.",
+]},
+{v:'1.11.0',d:'2026-06-30',n:[
+ "Mute and No-answer / drop-VM moved onto the phone (next to Call) — the old Voice-on / No-answer button row is gone.",
+ "CLOSER co-pilot: type what the prospect said into the live-note box and the AI suggests your exact next line and advances the CLOSER stage for you (needs the 🔑 AI connection).",
+]},
+{v:'1.10.0',d:'2026-06-30',n:[
+ "The phone dock is now 4 buttons: 💳 Pay link (3 price points), 📅 Booking (2-week calendar, now shown as two rows of 7 days), 📎 Content (pick what to text — explainer video, one-pager, case study, and more), and 🎥 Zoom (Zoom or Microsoft Teams).",
+ "Every send now asks you to confirm first — on desktop too, not just mobile — so a stray tap can never text the prospect blind.",
+ "Hotkeys updated: P pay · B booking · C content · Z zoom · T text · M mute.",
+]},
+{v:'1.9.0',d:'2026-06-30',n:[
+ "Live transcript folded into the Signals & flags box — one panel for everything the AI is picking up.",
+ "BANT is now tap-to-prequalify — tap any of Budget / Authority / Need / Timeline and pick from a quick dropdown (Comfortable / Tight / Can't afford, Sole DM / Needs partner, etc.). Still auto-fills from the call too.",
+]},
+{v:'1.8.0',d:'2026-06-30',n:[
+ "Closing controls are now tap-to-open pop-ups — great on mobile. From the phone dock: 💳 Pay link opens the payment-tier picker (Monthly / Annual / Pro), 📅 Booking opens the 2-week calendar, and 📹 Video opens a Zoom-or-FaceTime choice before texting the invite.",
+ "Payment lives on the phone now — tap 💳 Pay link to pick the tier and send. Removed the separate payment box from the cockpit.",
+ "Booking got a third option — 📞 Schedule callback (before the Closed path), using the same calendar; it also sets your Callback outcome. Renamed “Book the 3B call” to just “Booking”.",
+ "Video call lets you pick the platform: Zoom room or an Apple FaceTime link.",
+ "On mobile, every send asks you to confirm first — payment, video, booking — so a stray tap can't fire off to the prospect. Desktop stays one-tap.",
+]},
+{v:'1.7.0',d:'2026-06-30',n:[
+ "The top momentum bar now shows Closed deals and Revenue collected — when a payment clears, both tick up by the plan you sold (Monthly +$800, Annual +$3,500, Pro +$9,700).",
+]},
+{v:'1.6.0',d:'2026-06-30',n:[
+ "Cockpit reflow: signals & flags and the live transcript now sit above the CLOSER box, your live-note field moved inside the CLOSER, Close-the-deal moved up, and the outcome buttons are at the very bottom.",
+ "Book from a real calendar — pick any weekday in the next 2 weeks, then a time, for either 3B booking path.",
+ "Pick the payment tier before sending the link: Monthly ($500 + $300/mo), Annual ($500 + $3,000/yr), or Pro ($9,700/yr).",
+ "🌺 Hawaii-only toggle on the sort — work just your one-party-consent local list.",
+ "Call & End now live on the phone only — removed the duplicate call buttons elsewhere.",
+]},
+{v:'1.5.0',d:'2026-06-30',n:[
+ "The prospect now texts back in real time — connect the AI (🔑) and your phone thread becomes a live two-way conversation, so you can run DM sales over text.",
+ "Renamed the ⏰ focus from Expiring to Overdue — prospects you're past due to touch (a missed callback or an aging follow-up).",
+ "Added Call / End right on the phone, so you can start and end the call from the device itself (handy on mobile).",
+]},
+{v:'1.4.0',d:'2026-06-30',n:[
+ "The phone on the right is now YOUR phone — a working softphone. It shows a live call timer and a two-way text thread with the prospect (your texts on the right, theirs on the left).",
+ "Quick-send dock: one tap to text the prospect your 💳 payment link, 🎬 how-it-works video, 📅 booking link, or 🔗 Zoom room — plus a box to type any custom text.",
+ "New hotkeys while you work: P pay link · V video · B booking · Z zoom · T jump to the text box · M mute (alongside 1–4 outcome, ↵ log & next, Esc close).",
+]},
+{v:'1.3.0',d:'2026-06-30',n:[
+ "Work the queue by focus — the mission moved to the left rail, and above the queue you can now sort your list by 🔥 Hot, ✨ New leads, 📞 Callbacks, ✉️ Follow-ups, or ⏰ Expiring quotes. Pick a mode and work it top-down.",
+ "Log & Next auto-advances within your chosen focus, so a callback session stays on callbacks.",
+ "Every prospect carries their own location, local time, and caller ID — so the quiet-hours guard and local-presence number are right for each person.",
+ "Tap any prospect in the queue to load them into the cockpit.",
+]},
+{v:'1.2.0',d:'2026-06-30',n:[
+ "Voicemail drop — one tap on a no-answer drops a pre-recorded VM and jumps you straight to the next prospect. The biggest volume multiplier on a big list.",
+ "Pre-call history — a “🕐 History” line in the prospect header expands past touches (dispositions, objections, promises) so you walk in knowing the story.",
+ "Objection bank — tap “📚 Objections” for a searchable library of agree → reframe → story rebuttals, alongside the live detector.",
+ "Polish: tap any BANT cell to fix what the AI heard, tap the CLOSER stage to advance it yourself, and type your own notes while you talk.",
+]},
+{v:'1.1.0',d:'2026-06-30',n:[
+ "Cockpit rebuilt around the live call so you can just talk and close. The screen now guides your eye instead of making you scroll.",
+ "New “SAY THIS” band up top — the AI's suggested line is always front-and-center, and objection rebuttals (Agree → Story) pop right there so you never hunt for them mid-call.",
+ "Signals and BANT are merged into one always-visible strip — qualification state at a glance, no scrolling.",
+ "Keyboard-first: press 1–4 to set the outcome, Enter to log and jump straight to the next prospect. Never touch the mouse between calls.",
+ "“Not qualified” now pre-fills the reason from the signals actually heard on the call (plus an affordability flag), so logging is one tap.",
+]},
+{v:'1.0.9',d:'2026-06-30',n:[
+ "Close the deal in-cockpit: book the 3B call (closed → onboarding, or not-closed → 3B + senior closer) and send the EPIC LIFE payment link, with live Sent → Opened → Paid status.",
+ "Talk to the AI prospect with your mic (Chrome/Edge) — a browser preview of the live-listen loop.",
+ "Prospect's-phone view, quiet-hours / best-time guard, local-presence caller ID, and a daily-mission streak.",
+]},
+];
+
+function renderChangelog(){
+  $('clBody').innerHTML = PATCH_NOTES.map(p=>
+    '<div class="cl-entry"><span class="cl-v">v'+p.v+'</span><span class="cl-d">'+p.d+'</span><ul>'+
+    p.n.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
+}
+function openChangelog(){ renderChangelog(); $('clModal').classList.remove('hidden');
+  try{ localStorage.setItem('cockpit_seen_v',APP_VERSION); }catch(e){}
+  var v=$('ver'); if(v) v.classList.remove('ver-new'); }
+function closeChangelog(){ $('clModal').classList.add('hidden'); }
+let muted=false, voice=null, started=false, curAudio=null, runToken=0;
+let heardSignals=[], nqReason='', revenue=3500;
+function fmtRev(n){ return n>=1000 ? '$'+(n/1000).toFixed(1).replace(/\.0$/,'')+'k' : '$'+n; }
+function updateRev(){ var e=$('s-rev'); if(e) e.textContent=fmtRev(revenue); }
+let currentFocus='all', curId=null, curTz='America/New_York', curTzL='ET', hawaiiOnly=false;
+
+/* the book of business — each prospect carries its segments + local time + caller ID */
+const QUEUE=[
+ {id:'renee', ini:'RW', nm:'Renee Webb', sub:'Webb Logistics · Owner · 📍 Florida', reason:'Callback promised today', score:94, seg:['hot','callback'], loc:'📍 Florida', tz:'America/New_York', tzL:'ET', caller:'(305) 555-0142', hist:[
+   {d:'Jun 24',t:'📞 Callback — promised to decide by today'},
+   {d:'Jun 18',t:'✅ Connected — raised price, wanted to talk to her partner'},
+   {d:'Jun 10',t:'👀 Opened proposal 2×'}]},
+ {id:'dana', ini:'DL', nm:'Dana Liu', sub:'Liu Freight · Owner · 📍 Texas', reason:'Opened proposal 2×', score:88, seg:['hot','followup'], loc:'📍 Texas', tz:'America/Chicago', tzL:'CT', caller:'(214) 555-0143', hist:[
+   {d:'Jun 22',t:'👀 Opened proposal 2×'},
+   {d:'Jun 15',t:'✅ Connected — interested, timing concern (Q3)'}]},
+ {id:'priya', ini:'PS', nm:'Priya Shah', sub:'Shah Dental · Owner · 📍 California', reason:'Callback — asked for 2pm', score:86, seg:['callback','hot'], loc:'📍 California', tz:'America/Los_Angeles', tzL:'PT', caller:'(415) 555-0188', hist:[
+   {d:'Jun 26',t:'📞 Asked me to call back at 2pm today'},
+   {d:'Jun 19',t:'✅ Connected — wants to lower her tax bill'}]},
+ {id:'alicia', ini:'AG', nm:'Alicia Grant', sub:'Grant Realty · Owner · 📍 Florida', reason:'Very interested — deciding this wk', score:83, seg:['hot'], loc:'📍 Florida', tz:'America/New_York', tzL:'ET', caller:'(305) 555-0161', hist:[
+   {d:'Jun 21',t:'📄 Quote sent'},
+   {d:'Jun 17',t:'✅ Connected — very interested'}]},
+ {id:'reggie', ini:'RP', nm:'Reggie Park', sub:'Park &amp; Co · Owner · 📍 Nevada', reason:'Callback missed · 2d overdue', score:81, seg:['overdue'], loc:'📍 Nevada', tz:'America/Los_Angeles', tzL:'PT', caller:'(702) 555-0177', hist:[
+   {d:'Jun 24',t:'📞 Promised callback — I missed it (2d ago)'},
+   {d:'Jun 12',t:'📩 Voicemail dropped — no callback yet'}]},
+ {id:'marcus', ini:'MB', nm:'Marcus Bell', sub:'Bell HVAC · Owner · 📍 Georgia', reason:'New lead — form fill 2h ago', score:78, seg:['new','hot'], loc:'📍 Georgia', tz:'America/New_York', tzL:'ET', caller:'(404) 555-0119', hist:[
+   {d:'Today',t:'✨ New lead — submitted the interest form 2h ago'}]},
+ {id:'tom', ini:'TN', nm:'Tom Nguyen', sub:'Nguyen Auto · Owner · 📍 Washington', reason:'Emailed 3d ago · follow-up overdue', score:72, seg:['followup','overdue'], loc:'📍 Washington', tz:'America/Los_Angeles', tzL:'PT', caller:'(206) 555-0155', hist:[
+   {d:'Jun 25',t:'✉️ Emailed proposal — no reply yet'},
+   {d:'Jun 18',t:'✅ Connected — asked for pricing'}]},
+ {id:'sofia', ini:'SR', nm:'Sofia Reyes', sub:'Reyes Salon · Owner · 📍 Arizona', reason:'New lead — referral', score:70, seg:['new'], loc:'📍 Arizona', tz:'America/Phoenix', tzL:'MST', caller:'(602) 555-0132', hist:[
+   {d:'Today',t:'✨ New lead — referred by an EPIC LIFE member'}]},
+ {id:'derek', ini:'DC', nm:'Derek Cole', sub:'Cole Fitness · Owner · 📍 Ohio', reason:'DM sent 4d ago · overdue', score:66, seg:['followup','overdue'], loc:'📍 Ohio', tz:'America/New_York', tzL:'ET', caller:'(614) 555-0124', hist:[
+   {d:'Jun 24',t:'✉️ DM sent on IG — seen, no reply'}]},
+ {id:'keoni', ini:'KM', nm:'Keoni Mahoe', sub:'Mahoe Landscaping · Owner · 📍 Hawaii', reason:'Callback promised today', score:90, seg:['hot','callback'], loc:'📍 Hawaii', tz:'Pacific/Honolulu', tzL:'HST', caller:'(808) 555-0143', hist:[
+   {d:'Jun 25',t:'📞 Callback — said call me back today'},
+   {d:'Jun 19',t:'✅ Connected — wants to protect the business'}]},
+ {id:'leilani', ini:'LK', nm:'Leilani Kane', sub:'Kane Bakery · Owner · 📍 Hawaii', reason:'New lead — member referral', score:75, seg:['new'], loc:'📍 Hawaii', tz:'Pacific/Honolulu', tzL:'HST', caller:'(808) 555-0177', hist:[
+   {d:'Today',t:'✨ New lead — referred by an EPIC LIFE member'}]}
+];
+const FOCUS=[
+ {k:'all', emoji:'📋', label:'All'},
+ {k:'hot', emoji:'🔥', label:'Hot list'},
+ {k:'new', emoji:'✨', label:'New leads'},
+ {k:'callback', emoji:'📞', label:'Callbacks'},
+ {k:'followup', emoji:'✉️', label:'Follow-ups'},
+ {k:'overdue', emoji:'⏰', label:'Overdue'}
+];
+function curProspectObj(){ return QUEUE.find(p=>p.id===curId)||QUEUE[0]; }
+function scoreCls(s){ return s>=85?'hi':(s>=75?'mid':'low'); }
+function filteredList(){ return QUEUE.filter(p=>(currentFocus==='all'||p.seg.indexOf(currentFocus)>=0) && (!hawaiiOnly || /Hawaii/.test(p.loc))).slice().sort((a,b)=>b.score-a.score); }
+
+function pickVoice(){
+  const vs=(window.speechSynthesis?speechSynthesis.getVoices():[])||[];
+  voice=vs.find(v=>/en/i.test(v.lang)&&/natural|google|samantha|aria|jenny/i.test(v.name))
+      ||vs.find(v=>/en-US/i.test(v.lang))||vs.find(v=>/en/i.test(v.lang))||vs[0];
+}
+if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged=pickVoice; pickVoice(); }
+
+/* fallback robotic voice if an audio clip fails to load */
+function speakFallback(text){
+  return new Promise(res=>{
+    if(!('speechSynthesis' in window)){ return setTimeout(res, Math.min(4200,700+text.length*42)); }
+    const u=new SpeechSynthesisUtterance(text); u.rate=1; u.pitch=1; if(voice)u.voice=voice;
+    const to=setTimeout(res,9000); u.onend=()=>{clearTimeout(to);res()}; u.onerror=()=>{clearTimeout(to);res()};
+    speechSynthesis.speak(u);
+  });
+}
+/* primary: play the pre-baked realistic clip */
+function play(src,text){
+  return new Promise(res=>{
+    if(muted){ return setTimeout(res, Math.min(3500,500+text.length*38)); }
+    if(!src){ return speakFallback(text).then(res); }
+    let done=false; const fin=()=>{ if(done)return; done=true; res(); };
+    const a=new Audio(src); curAudio=a;
+    a.onended=fin;
+    a.onerror=()=>{ if(done)return; done=true; speakFallback(text).then(res); };
+    const pr=a.play();
+    if(pr&&pr.catch) pr.catch(()=>{ if(done)return; done=true; speakFallback(text).then(res); });
+  });
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1900);}
+
+function addTranscript(who,txt){
+  const t=$('transcript'); if(t.querySelector('.muted')) t.innerHTML='';
+  const d=document.createElement('div'); d.className='tline '+(who==='Renee'?'them':'you');
+  d.innerHTML='<span class="who">'+who+':</span> '+txt; t.appendChild(d); t.scrollTop=t.scrollHeight;
+  try{autoBank()}catch(e){} try{autoOutcome()}catch(e){}
+}
+function setBant(cell,val,cls){const el=$(cell);el.className='bcell '+cls;el.querySelector('.v').textContent=val; try{renderClose()}catch(e){} try{autoOutcome()}catch(e){}}
+function setCloser(stage,hint){$('closer-stage').textContent=stage; if(hint)$('closer-hint').textContent=hint;}
+/* SAY THIS hero — the line the rep should say now */
+function setSay(html,cue){ const el=$('sayLine'); el.className='say'+(cue?' cue':''); el.innerHTML=html; }
+function resetSay(){ $('sayLine').className='say'; $('sayLine').innerHTML='<span class="muted" style="font-size:.82rem">Your suggested line appears here as the call moves — glance, say it, keep talking.</span>'; }
+function setSayFromScript(text){
+  if(/^\s*\[/.test(text)) setSay('<span class="qmark">👉</span> Use the rebuttal below — agree, then tell the story.', true);
+  else setSay('<span class="qmark">“</span>'+esc(text)+'<span class="qmark">”</span>', true);
+}
+function addNote(txt){const n=$('notes'); if(n.querySelector('.muted'))n.innerHTML=''; const d=document.createElement('div');d.className='n';d.textContent='• '+txt;n.appendChild(d); try{renderClose()}catch(e){} try{autoBank()}catch(e){} try{autoOutcome()}catch(e){}}
+function addChip(label,cls,isNew){
+  const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
+  const s=document.createElement('span'); s.className='chip '+cls;
+  s.innerHTML=(cls==='pos'?'✓ ':'⚑ ')+label+(isNew?' <span class="new">· just now</span>':'');
+  c.appendChild(s);
+  if(cls!=='pos' && heardSignals.indexOf(label)<0) heardSignals.push(label);
+  if(isNew) setTimeout(()=>{const nw=s.querySelector('.new'); if(nw)nw.remove();},2600);
+  try{renderClose()}catch(e){} try{autoBank()}catch(e){} try{autoOutcome()}catch(e){}
+}
+function flagAlert(tag,quote){
+  $('flagAlert').innerHTML='<div class="flag-alert">⚑ <div><b>Signal — '+tag+'.</b> Heard: “'+quote+'.” Added to profile (soft flag). <span style="color:#ffd58a;cursor:pointer">undo</span></div></div>';
+}
+function showObjection(){
+  $('objBox').innerHTML=
+   '<div class="obj"><div class="h">⚠ Objection heard — “I need to talk to my partner first”</div>'+
+   '<div class="r"><div class="t">1 · Agree</div><div class="x">“Totally — a call like this should include your partner, I’d want the same.”</div></div>'+
+   '<div class="r"><div class="t">2 · Reframe with a story</div><div class="x">“Most owners say that. Dana at Liu Freight did exactly this — we got her partner on a 10-minute call, both saw the numbers, signed that week. Want me to set that up?”</div></div></div>';
+}
+
+/* consent gate — folded into the chip row (fresh promise per call) */
+let consentResolve=null;
+function showConsentChip(){
+  const c=$('chips'); if(c.querySelector('.muted'))c.innerHTML='';
+  const s=document.createElement('span'); s.className='chip consent'; s.id='consentChip';
+  s.innerHTML='🔴 FL — tap: read disclosure';
+  s.onclick=()=>{ s.className='chip consent done'; s.innerHTML='✓ FL · disclosure read'; s.onclick=null; if(consentResolve)consentResolve(); };
+  c.appendChild(s);
+}
+
+/* the scripted call — prospect lines have a pre-baked audio clip */
+const script=[
+  {who:'Renee',aud:'audio/p0.mp3',say:"Hey, yeah — you said you'd call me back today.",closer:['Clarify','clarify why she\'s here']},
+  {who:'You',text:"I did, appreciate you picking up. Quick one — how's business right now?"},
+  {who:'Renee',aud:'audio/p1.mp3',say:"Three trucks, trying to grow, but honestly I worry about protecting what I've built.",
+    bant:['b-need','Growth + protect','ok'], chip:['High intent','pos',false], bank:'B', closer:['Label','label the problem']},
+  {who:'You',text:"That gap is exactly what this closes — growth and downside protection in one."},
+  {who:'Renee',aud:'audio/p2.mp3',say:"Okay. So what's it run me?"},
+  {who:'You',text:"Eight hundred to get started, then three hundred a month."},
+  {who:'Renee',aud:'audio/p3.mp3',say:"Yeah, I can swing that, that's fine.", bant:['b-budget','$800 to start · $300/mo','ok'], note:"Comfortable with $800 to start + $300/mo", closer:['Overview','overview past pain']},
+  {who:'Renee',aud:'audio/p4.mp3',say:"I'll tell you though, the whole industry feels rigged against small operators like me.",
+    chip:['Blamer / victim','soft',true], flag:['Blamer / victim',"the whole industry feels rigged against small operators like me"], closer:['Sell','sell the outcome']},
+  {who:'You',text:"I hear you — and that's the point, this puts the leverage back on your side."},
+  {who:'Renee',aud:'audio/p5.mp3',say:"I'd want to run it past my business partner first, though.",
+    bant:['b-auth','+ partner?','warn'], obj:true, note:"Decision-maker with a business partner — needs alignment", closer:['Explain','handle the partner concern']},
+  {who:'You',text:"[Agree → reframe with the Dana story]"},
+  {who:'Renee',aud:'audio/p6.mp3',say:"You know what — yeah, set up a call with both of us this week.",
+    bant:['b-time','This month','ok'], outcome:'booked', closer:['Reinforce','reinforce the decision']},
+  {who:'You',text:"Done. I'll send a couple times for you and your partner this week."}
+];
+
+async function applyEffects(s){
+  if(s.bant) setBant(s.bant[0],s.bant[1],s.bant[2]);
+  if(s.chip) addChip(s.chip[0],s.chip[1],s.chip[2]);
+  if(s.flag) flagAlert(s.flag[0],s.flag[1]);
+  if(s.note) addNote(s.note);
+  if(s.bank && !bankManual) pickBank(s.bank, true);
+  if(s.obj) showObjection();
+  if(s.closer) setCloser(s.closer[0],s.closer[1]);
+  if(s.outcome && !outcomeManual){ selectOutcome(s.outcome, true); toast('Co-pilot suggests: '+s.outcome); }
+}
+
+async function runCall(){
+  const myToken=++runToken;
+  $('status').className='pill live'; $('status').innerHTML='● connecting…';
+  $('callBtn').className='btn end'; $('callBtn').innerHTML='⛔ End'; $('callBtn').disabled=false;
+  phCall('📲 Incoming call…','ring');
+  await wait(900); if(myToken!==runToken) return;
+  $('status').innerHTML='● connected';
+  phOnCall();
+  if($('tzStatus').classList.contains('qbad')) toast('⛔ Quiet hours in FL — the real tool blocks this; demo override');
+  bump('s-dials'); bump('s-conn');
+  showConsentChip();
+  toast('Florida = all-party consent — tap the chip to start');
+  const consentDone=new Promise(r=>consentResolve=r);
+  await consentDone; if(myToken!==runToken) return;
+  $('status').innerHTML='🎙️ listening';
+  setCloser('Clarify','listening…');
+  await wait(500); if(myToken!==runToken) return;
+  for(let i=0;i<script.length;i++){
+    const s=script[i];
+    if(myToken!==runToken) return;
+    if(s.who==='Renee'){
+      addTranscript('Renee',s.say); await applyEffects(s);
+      for(let j=i+1;j<script.length;j++){ if(script[j].who==='You'){ setSayFromScript(script[j].text); break; } }
+      await play(s.aud,s.say); await wait(350);
+    } else { addTranscript('You',s.text); await applyEffects(s); await wait(1100); }
+  }
+  if(myToken!==runToken) return;
+  $('closer-hint').textContent='ready to close';
+  phEndCall(); phMsg('Call ended','sys');
+  toast('Call complete — log it and move on');
+}
+function bump(id){$(id).textContent=parseInt($(id).textContent)+1; try{updateMission();}catch(e){}}
+
+$('startBtn').onclick=()=>{ if(started)return; started=true; $('startBtn').disabled=true; setPhCallBtn(); runCall(); };
+function syncMute(){ $('muteBtn').textContent=muted?'🔇 Voice off':'🔊 Voice on'; var pm=$('phMute'); if(pm){ pm.textContent=muted?'🔇':'🔊'; pm.classList.toggle('on',muted); } }
+function toggleMute(){ muted=!muted; if(muted){ if('speechSynthesis'in window)speechSynthesis.cancel(); if(curAudio){try{curAudio.pause()}catch(e){}} } syncMute(); }
+$('muteBtn').onclick=toggleMute;
+$('phMute').onclick=toggleMute;
+$('phVm').onclick=()=>$('vmBtn').click();
+syncMute();
+
+/* ===== End / reset — stop everything and allow a fresh run ===== */
+function stopAudio(){ if('speechSynthesis'in window){try{speechSynthesis.cancel()}catch(e){}} if(curAudio){try{curAudio.pause()}catch(e){}} }
+/* clear the live-call surfaces WITHOUT touching momentum stats or queue count */
+function clearCallUI(){
+  runToken++; stopAudio(); consentResolve=null;
+  if(typeof micOn!=='undefined' && micOn){ micOn=false; try{recog&&recog.stop()}catch(e){} var mb=$('micBtn'); if(mb){mb.classList.remove('on'); mb.textContent='🎤';} }
+  $('status').className='pill idle'; $('status').innerHTML='● idle';
+  started=false; $('startBtn').disabled=false;
+  var cb=$('callBtn'); cb.className='btn call'; cb.textContent='📞 Call'; cb.disabled=true;
+  $('transcript').innerHTML='<span class="muted">—</span>';
+  $('chips').innerHTML='<span class="muted" style="font-size:.76rem">Signals appear here as the AI hears them…</span>';
+  $('flagAlert').innerHTML='';
+  var bl={'b-budget':'💰 Budget','b-auth':'👤 Authority','b-need':'🎯 Need','b-time':'⏱️ Timeline'};
+  Object.keys(bl).forEach(function(id){ $(id).className='bcell'; var v=$(id).querySelector('.v'); v.removeAttribute('contenteditable'); v.textContent='—'; });
+  $('noteInput').value=''; $('objModal').classList.add('hidden'); try{closePops();hideConfirm();}catch(e){}
+  setCloser('Clarify','listening…'); resetSay();
+  $('objBox').innerHTML='';
+  $('notes').innerHTML='<span class="muted" style="font-size:.76rem">…</span>';
+  document.querySelectorAll('.opt').forEach(function(o){o.classList.remove('sel')});
+  outcomeManual=false; dealPaid=false;
+  $('nqReasons').className='nq-reasons hidden'; $('nqReasons').innerHTML='';
+  $('bookStatus').className='cstatus'; $('bookStatus').textContent='Pick a day in the next 2 weeks, then a time.';
+  try{ renderCalDates(); }catch(e){}
+  $('payStatus').className='cstatus'; $('payStatus').textContent='No link sent yet.'; $('payBtn').disabled=false;
+  try{ setBkMode('closed'); setPlan('monthly'); }catch(e){}
+  phEndCall(); $('phMsgs').innerHTML='<div class="ph-empty">Your thread with the prospect — text or call.</div>';
+  convo=[]; smsConvo=[]; heardSignals=[]; nqReason='';
+  bankManual=false; document.querySelectorAll('#bankTypes .bank-t').forEach(function(x){x.classList.remove('sel')});
+  var br=$('bankRead'); if(br) br.innerHTML='<span class="muted" style="font-size:.8rem">Tap the prospect’s dominant type — or it auto-reads from the call.</span>';
+  setPhCallBtn(); try{renderClose()}catch(e){}
+}
+/* select a prospect into the cockpit (fresh call surfaces) */
+function selectProspect(id, clear){
+  const p=QUEUE.find(x=>x.id===id)||QUEUE[0];
+  if(clear!==false) clearCallUI();
+  curId=p.id; curTz=p.tz; curTzL=p.tzL;
+  $('pAvatar').textContent=p.ini; $('pName').textContent=p.nm; $('pSub').innerHTML=p.sub;
+  $('locLabel').innerHTML=p.loc; $('callerId').textContent=p.caller;
+  var pw=$('phWho'); if(pw) pw.textContent=p.nm;
+  var el=$('emailLink'); if(el) el.textContent='✉️ '+prospectEmail(p);
+  updateTiming();
+  const h=p.hist||[];
+  $('histBox').innerHTML=h.length? h.map(x=>'<div class="hist-item"><span class="hd">'+x.d+'</span><span>'+x.t+'</span></div>').join('') : '<div class="hist-item"><span class="muted">No prior touches.</span></div>';
+  $('histBox').classList.add('hidden');
+  $('histToggle').innerHTML='🕐 History ('+h.length+') ▾';
+  document.querySelectorAll('#queueList .qcard').forEach(c=>c.classList.toggle('active', c.getAttribute('data-id')===p.id));
+  try{renderClose()}catch(e){}
+}
+/* render the queue from the current focus */
+function renderQueue(){
+  const list=filteredList();
+  $('queueList').innerHTML = list.length ? list.map((p,i)=>
+    '<div class="qcard'+(p.id===curId?' active':'')+'" data-id="'+p.id+'"><span class="qrank">'+(i+1)+'</span>'+
+    '<div class="qbody"><div class="qname">'+esc(p.nm)+'</div><div class="qreason">'+esc(p.reason)+'</div></div>'+
+    '<span class="qscore '+scoreCls(p.score)+'">'+p.score+'</span></div>').join('')
+    : '<div style="text-align:center;font-size:.74rem;color:var(--text2);padding:10px">No prospects in this focus.</div>';
+  document.querySelectorAll('#queueList .qcard').forEach(c=>c.onclick=()=>selectProspect(c.getAttribute('data-id'), true));
+  const f=FOCUS.find(x=>x.k===currentFocus);
+  $('qCount').textContent=(f?f.emoji+' '+f.label:'All')+' · '+list.length;
+}
+function renderFocusChips(){
+  $('focusChips').innerHTML=FOCUS.map(f=>'<span class="focus-chip'+(f.k===currentFocus?' on':'')+'" data-k="'+f.k+'">'+f.emoji+' '+f.label+'</span>').join('');
+  document.querySelectorAll('#focusChips .focus-chip').forEach(c=>c.onclick=()=>setFocus(c.getAttribute('data-k')));
+}
+function setFocus(k, silent){
+  currentFocus=k; renderFocusChips();
+  const list=filteredList();
+  const keep=list.some(p=>p.id===curId);
+  renderQueue();
+  if(!keep){ curId=list.length?list[0].id:null; if(curId) selectProspect(curId, true); else renderQueue(); }
+  if(!silent){ const f=FOCUS.find(x=>x.k===k); toast('Focus: '+(f?f.emoji+' '+f.label:'All')+' · '+list.length+' prospect'+(list.length===1?'':'s')); }
+}
+$('hiToggle').onchange=()=>{ hawaiiOnly=$('hiToggle').checked; curId=null; setFocus(currentFocus, true);
+  toast(hawaiiOnly?'🌺 Hawaii only — one-party consent, no disclosure needed':'Showing all states'); };
+function resetDemo(){
+  $('s-dials').textContent='22'; $('s-conn').textContent='7'; $('s-book').textContent='2'; $('s-queue').textContent='41';
+  $('s-closed').textContent='1'; revenue=3500; updateRev();
+  ['goalDials','goalConn','goalBook'].forEach(function(id){$(id).classList.remove('done')});
+  curId=null; setFocus('all', true);
+  try{ updateMission(); }catch(e){}
+  toast('Demo reset — ready to start again');
+}
+$('callBtn').onclick=resetDemo;
+
+/* ===== Outcome selection + the sacred log→next loop ===== */
+var outcomeManual=false, dealPaid=false;
+function selectOutcome(o, auto){
+  if(!auto) outcomeManual=true;
+  document.querySelectorAll('.opt').forEach(x=>x.classList.toggle('sel',x.dataset.o===o));
+  if(o==='nq') showNqReasons(); else { $('nqReasons').classList.add('hidden'); nqReason=''; }
+}
+document.querySelectorAll('.opt').forEach(o=>o.onclick=()=>selectOutcome(o.dataset.o));
+/* auto-read the outcome from the call; a rep tap overrides + locks it */
+function deriveOutcome(){
+  if(dealPaid) return 'won';
+  if(document.querySelectorAll('#chips .chip.hard').length || $('b-budget').classList.contains('bad')) return 'nq';
+  var ctx=($('transcript').textContent+' '+$('notes').textContent).toLowerCase();
+  if(/not interested|no thanks|not for me|pass on this|don.?t want|we.?re good|no need/.test(ctx)) return 'notint';
+  if(/call me back|call back|callback|reach me|try me|bad time|later this week|next week|another time/.test(ctx)) return 'callback';
+  if($('transcript').querySelector('.tline')) return 'connected';
+  return null;
+}
+function autoOutcome(){ if(outcomeManual) return; var o=deriveOutcome(); if(o) selectOutcome(o, true); }
+/* disqualify reasons — pre-fill from the signals actually heard on this call */
+function showNqReasons(){
+  const box=$('nqReasons'); box.classList.remove('hidden');
+  const items=[], seen={};
+  heardSignals.forEach(l=>{ if(!seen[l]){seen[l]=1; items.push({l,pre:true});} });
+  if($('b-budget').classList.contains('warn')||$('b-budget').classList.contains('bad')){ const l="Can't afford base ($800 to start · $300/mo)"; if(!seen[l]){seen[l]=1; items.push({l,pre:true});} }
+  ['Uncoachable / know-it-all','Integrity / cuts corners','Get-rich-quick','Not a fit'].forEach(l=>{ if(!seen[l]){seen[l]=1; items.push({l,pre:false});} });
+  box.innerHTML=items.map(it=>'<span class="rz'+(it.pre?' pre':'')+'" data-r="'+esc(it.l)+'">'+(it.pre?'• ':'')+esc(it.l)+'</span>').join('');
+  box.querySelectorAll('.rz').forEach(r=>r.onclick=()=>{ box.querySelectorAll('.rz').forEach(x=>x.classList.remove('sel')); r.classList.add('sel'); nqReason=r.dataset.r; });
+}
+function logAndNext(){
+  const sel=document.querySelector('.opt.sel');
+  if(!sel){ toast('Pick an outcome first (1–6)'); return; }
+  const o=sel.dataset.o;
+  if(o==='nq' && !nqReason){ toast('Pick a disqualify reason'); return; }
+  if(o==='booked') bump('s-book');
+  advanceQueue();
+}
+function advanceQueue(verb){
+  verb=verb||'Logged ✓';
+  const list=filteredList();
+  const idx=list.findIndex(p=>p.id===curId);
+  const next=list.length? list[(idx+1)%list.length] : null;
+  if(next) selectProspect(next.id, true); else clearCallUI();
+  renderQueue();
+  const qn=$('s-queue'); qn.textContent=Math.max(0,parseInt(qn.textContent,10)-1);
+  toast(verb+' · now on '+(next?next.nm:'—'));
+}
+$('nextBtn').onclick=logAndNext;
+
+/* ===== keyboard-first: 1–4 pick outcome, ↵ log & advance (ignored while typing) ===== */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeChangelog(); $('objModal').classList.add('hidden'); closePops(); try{hideConfirm();}catch(e){} try{closeBantMenu();}catch(e){} return; }
+  const el=document.activeElement;
+  if(el && (el.id==='chatInput' || el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.isContentEditable)) return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  const map={'1':'won','2':'booked','3':'callback','4':'connected','5':'notint','6':'nq'};
+  const qk={'p':'pay','b':'book','c':'content','z':'zoom','v':'zoom'};
+  const lk=(e.key||'').toLowerCase();
+  if(map[e.key]){ selectOutcome(map[e.key]); e.preventDefault(); }
+  else if(e.key==='Enter'){ logAndNext(); e.preventDefault(); }
+  else if(qk[lk]){ firePhoneQuick(qk[lk]); e.preventDefault(); }
+  else if(lk==='t'){ var pi=$('phInput'); if(pi){ pi.focus(); e.preventDefault(); } }
+  else if(lk==='m'){ $('muteBtn').click(); e.preventDefault(); }
+});
+
+/* ===== v1.2.0: voicemail drop, history, clickable CLOSER, editable BANT, manual notes, objection bank ===== */
+/* voicemail drop — one-click no-answer path (biggest volume multiplier on a big list) */
+$('vmBtn').onclick=()=>{ bump('s-dials'); advanceQueue('📩 VM dropped'); };
+
+/* pre-call history timeline */
+$('histToggle').onclick=()=>{ const b=$('histBox'); const hidden=b.classList.toggle('hidden');
+  $('histToggle').innerHTML='🕐 History ('+(curProspectObj().hist||[]).length+') '+(hidden?'▾':'▴'); };
+
+/* clickable CLOSER stage — manual advance when the rep wants to drive it */
+const CLOSER_STAGES=['Clarify','Label','Overview','Sell','Explain','Reinforce'];
+$('closer-stage').onclick=()=>{ const i=CLOSER_STAGES.indexOf($('closer-stage').textContent);
+  setCloser(CLOSER_STAGES[(i+1)%CLOSER_STAGES.length],'manual'); };
+
+/* tap-to-prequalify BANT — a quick dropdown of standard options per criterion (still auto-fills from the call) */
+const BANT_OPTS={
+ 'b-budget':[['✅ Comfortable','ok'],['👍 Can swing it','ok'],['⚠️ Tight','warn'],['❌ Can’t afford base','bad']],
+ 'b-auth':[['✅ Sole decision-maker','ok'],['⚠️ Needs partner/spouse','warn'],['⚠️ Needs boss/board','warn'],['❓ Unclear','warn']],
+ 'b-need':[['🔥 Strong / urgent','ok'],['👍 Moderate','ok'],['😐 Nice-to-have','warn'],['❌ No real need','bad']],
+ 'b-time':[['⚡ This month','ok'],['📆 This quarter','ok'],['🕓 Later / someday','warn'],['❌ No timeline','bad']]
+};
+function closeBantMenu(){ var m=$('bantMenu'); if(m) m.classList.add('hidden'); }
+function openBantMenu(cellId){
+  const cell=$(cellId), opts=BANT_OPTS[cellId]||[], menu=$('bantMenu');
+  menu.innerHTML=opts.map((o,i)=>'<button data-i="'+i+'">'+o[0]+'</button>').join('')+'<button data-i="clear" style="color:var(--text2)">— clear</button>';
+  const r=cell.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(r.left, window.innerWidth-186))+'px';
+  menu.style.top='0px'; menu.classList.remove('hidden');
+  var mh=menu.offsetHeight, top=r.bottom+4;
+  if(top+mh>window.innerHeight-6) top=Math.max(6, r.top-mh-4); // flip above (pinned BANT bar)
+  menu.style.top=top+'px';
+  menu.querySelectorAll('button').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); var i=b.getAttribute('data-i');
+    if(i==='clear'){ cell.className='bcell'; cell.querySelector('.v').textContent='—'; }
+    else { var o=opts[parseInt(i,10)]; setBant(cellId,o[0],o[1]); }
+    closeBantMenu(); });
+}
+document.querySelectorAll('.bcell').forEach(cell=>{ cell.onclick=(e)=>{ e.stopPropagation(); openBantMenu(cell.id); }; });
+document.addEventListener('click',()=>{ var m=$('bantMenu'); if(m && !m.classList.contains('hidden')) closeBantMenu(); });
+window.addEventListener('scroll',closeBantMenu,true);
+
+/* ===== floating BANT dock: bottom / left + collapse (rep preference, saved) ===== */
+var bantDock='bottom', bantCollapsed=false;
+try{ bantDock=localStorage.getItem('bant_dock')||'bottom'; bantCollapsed=localStorage.getItem('bant_collapsed')==='1'; }catch(e){}
+function applyDock(){
+  var bb=$('bantBar'); if(!bb) return;
+  bb.className=(bantDock==='left'?'dock-left':'dock-bottom')+(bantCollapsed?' collapsed':'');
+  var isMob=window.matchMedia&&window.matchMedia('(max-width:600px)').matches;
+  document.body.style.paddingBottom=(bantDock==='left')?'18px':(bantCollapsed?'40px':(isMob?'132px':'86px'));
+  var dk=$('bbDock'); if(dk){ dk.textContent=bantDock==='bottom'?'⬅':'⬇'; dk.title=bantDock==='bottom'?'Move to left':'Move to bottom'; }
+  var cl=$('bbCollapse'); if(cl){ cl.textContent=bantCollapsed?'▸':'▾'; cl.title=bantCollapsed?'Expand':'Collapse'; }
+  try{ localStorage.setItem('bant_dock',bantDock); localStorage.setItem('bant_collapsed',bantCollapsed?'1':'0'); }catch(e){}
+}
+$('bbDock').onclick=function(){ bantDock=(bantDock==='bottom'?'left':'bottom'); applyDock(); };
+$('bbCollapse').onclick=function(){ bantCollapsed=!bantCollapsed; applyDock(); };
+$('bbLbl').onclick=function(){ bantCollapsed=!bantCollapsed; applyDock(); };
+window.addEventListener('resize',applyDock);
+applyDock();
+
+/* type-while-talking notes */
+$('noteInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const t=$('noteInput').value.trim(); if(t){ addNote(t); $('noteInput').value=''; closerCoach(t); } } });
+
+/* CLOSER co-pilot: a note you type → next line to say + advance the CLOSER stage (needs the AI 🔑) */
+let _coachHinted=false;
+async function closerCoach(note){
+  const key=getKey();
+  if(!key){ if(!_coachHinted){ _coachHinted=true; toast('Connect the AI (🔑) to get next-line coaching from your notes'); } return; }
+  const p=curProspectObj(), stage=$('closer-stage').textContent, co=((p.sub||'').split('·')[0]||'').trim();
+  const bant=['b-budget','b-auth','b-need','b-time'].map(id=>$(id).querySelector('.v').textContent).filter(v=>v&&v!=='—').join(' · ')||'nothing yet';
+  const hintEl=$('closer-hint'), prevHint=hintEl?hintEl.textContent:''; if(hintEl) hintEl.textContent='coaching…';
+  const sys="You are a live sales-call co-pilot running the CLOSER framework (Clarify → Label → Overview → Sell → Explain → Reinforce). The rep is selling an EPIC LIFE membership (business-growth + financial-protection, built on the MyFICO 3-bureau '3B' credit report / FinFit strategy). Tiers: MONTHLY $800 to start then $300/mo — Capital Access & Debt Protection (Credit Audit, Credit Builder, Personal Debt Exit, Family Income Protection), Commercial Benefits (EPIC LIFE Portal + assigned Coach, Banking Relationship Coaching, Liability Holding Company structuring, Business Insurance Review), live member events. ANNUAL $3,500 to start then $3,000/yr (best value) — adds Personal Credit & Cashflow Management, Personal Debt Paydown, Access to Capital (Personal LOCs & HELOCs). PRO $9,700/yr (premium) — adds full business build-out (agency website, business credit/D-U-N-S/Nav, bookkeeping, tax review) and Real Estate (custom strategy, turnkey & off-market property access, lending vendors). Affordability floor: can they cover ~$300/mo. Current CLOSER stage: "+stage+". Prospect: "+p.nm+" ("+co+"). Qualified so far: "+bant+". The rep just noted what the prospect said. Return ONLY a raw JSON object (no markdown): {\"coach\":\"the exact next line the rep should say — 1 to 2 sentences, in the rep's voice\",\"stage\":\"the CLOSER stage the rep should be in now (advance past the current stage if the note shows it's handled)\",\"why\":\"3-6 word reason\",\"bank\":\"the prospect's likely BANK personality from how they talk — one letter: B (Blueprint: security/structure/proof), A (Action: fast/results-now), N (Nurturing: relationships/family/trust), or K (Knowledge: data/facts/expertise)\"}.";
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:220,system:sys,messages:[{role:'user',content:note}]}) });
+    if(!r.ok) throw new Error(r.status+'');
+    const j=await r.json(); let txt=((j.content&&j.content[0]&&j.content[0].text)||'{}').replace(/```json/gi,'').replace(/```/g,'').trim();
+    var a=txt.indexOf('{'),b=txt.lastIndexOf('}'); if(a>=0&&b>=0) txt=txt.slice(a,b+1);
+    const d=JSON.parse(txt);
+    if(d.coach) setSay('<span class="qmark">“</span>'+esc(d.coach)+'<span class="qmark">”</span>', true);
+    var st=d.stage && CLOSER_STAGES.find(s=>s.toLowerCase()===String(d.stage).toLowerCase().trim());
+    if(st){ setCloser(st, d.why||'from your note'); if(st!==stage) toast('CLOSER → '+st); }
+    if(d.bank && !bankManual){ var bk=String(d.bank).toUpperCase().charAt(0); if(BANK[bk]) pickBank(bk,true); }
+    else if(hintEl) hintEl.textContent=prevHint;
+  }catch(e){ if(hintEl) hintEl.textContent=prevHint; toast('Coach unavailable — check the 🔑 key'); }
+}
+
+/* ===== searchable objection bank ===== */
+const OBJ_BANK=[
+ {q:"I need to talk to my partner first", a:"Totally — a decision like this should include your partner, I'd want the same.", r:"Dana at Liu Freight did exactly that — we got her partner on a 10-minute call, both saw the numbers, signed that week. Want me to set that up?"},
+ {q:"It's too expensive / I can't afford it", a:"I hear you — $500 plus $300 a month is real money.", r:"That's exactly why we start with your 3B report — most owners free up more than that in the first 90 days. It pays for itself before it costs you."},
+ {q:"I need to think about it", a:"Makes sense — you don't want to rush a decision like this.", r:"What specifically would you want to think through? Nine times out of ten I can answer it right now so you're not sitting on it all week."},
+ {q:"I'm too busy right now", a:"I get it — you're running the business, not sitting by the phone.", r:"That's the whole point of this — it's built to give you time back. Fifteen minutes now saves you hours a month."},
+ {q:"Just send me some information", a:"Happy to — I want you to have what you need.", r:"Info's only useful with context. Let's do the 3B call, I'll pull your real numbers live, and you'll see exactly how it fits — way better than a PDF."},
+ {q:"I've been burned before — does this actually work?", a:"Fair — a lot of people overpromise in this space.", r:"That's why we pull your real MyFICO 3-bureau report on the call. No hype — your actual numbers, your actual plan."},
+ {q:"Let me call you back", a:"Of course — I don't want to catch you at a bad time.", r:"Let's lock a specific slot so it doesn't slip — is tomorrow morning or afternoon better for you?"}
+];
+function renderObjBank(q){
+  q=(q||'').toLowerCase().trim();
+  const items=OBJ_BANK.filter(o=>!q || (o.q+' '+o.a+' '+o.r).toLowerCase().includes(q));
+  $('objBankBody').innerHTML = items.length
+    ? items.map(o=>'<div class="cl-entry"><div class="ob-q">“'+esc(o.q)+'”</div>'+
+        '<div class="ob-r"><span class="ob-t">1 · Agree</span>'+esc(o.a)+'</div>'+
+        '<div class="ob-r"><span class="ob-t">2 · Reframe + story</span>'+esc(o.r)+'</div></div>').join('')
+    : '<div class="cl-entry"><span class="muted">No match — try “price”, “partner”, “time”, “busy”…</span></div>';
+}
+function openObjBank(){ $('objSearch').value=''; renderObjBank(''); $('objModal').classList.remove('hidden'); setTimeout(()=>{try{$('objSearch').focus()}catch(e){}},50); }
+$('objBankBtn').onclick=openObjBank;
+$('objModalClose').onclick=()=>$('objModal').classList.add('hidden');
+$('objModal').onclick=(e)=>{ if(e.target===$('objModal')) $('objModal').classList.add('hidden'); };
+$('objSearch').oninput=()=>renderObjBank($('objSearch').value);
+
+/* ===== Interactive mode: type to talk to Renee (live AI) ===== */
+function esc(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function getKey(){return localStorage.getItem('anthropic_key')||'';}
+function setAiStatus(){ const k=getKey();
+  $('aiStatus').innerHTML = k
+    ? '🟢 AI prospect connected — type, or tap 🎤 to TALK, and Renee answers in character while EPIC Closer updates live.'
+    : '⚪ Not connected. Click “Connect AI prospect” and paste your Anthropic API key (kept only in this browser). The scripted ▶ Start call works without it.';
+}
+$('keyBtn').onclick=()=>{ const cur=getKey();
+  const k=prompt('Paste your Anthropic API key.\nIt is stored ONLY in this browser (localStorage) — never uploaded or committed.', cur);
+  if(k!==null){ if(k.trim()) localStorage.setItem('anthropic_key',k.trim()); else localStorage.removeItem('anthropic_key'); setAiStatus(); } };
+
+function ttsUrl(t){ return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q='+encodeURIComponent(String(t).slice(0,190)); }
+
+let convo=[];
+let smsConvo=[], smsHinted=false;
+const RENEE_SYS = "You are Renee Webb, owner of Webb Logistics (3 trucks), on a live sales call. A rep is selling you an EPIC LIFE membership ($800 to start, then $300/month; business growth + financial protection — credit building, debt payoff, access to capital). Stay fully in character: realistic, busy, a little guarded; ask normal questions; raise natural objections (price, needing to talk to your partner, skepticism); warm up if the rep handles you well. Keep every reply to 1-2 short sentences, under 30 words — it will be spoken aloud. You are ALSO the rep's silent sales co-pilot analyzing the call. Reply with ONLY a raw JSON object (no markdown, no backticks): {\"reply\":\"what Renee says out loud\",\"bant\":{\"budget\":\"\",\"authority\":\"\",\"need\":\"\",\"timeline\":\"\"},\"signal\":null,\"objection\":null,\"note\":\"\",\"closer\":\"\",\"coach\":\"\"}. Only fill bant fields you can infer so far; leave the rest empty. Set \"coach\" to ONE short line (under 20 words) the rep should say next to move the sale forward. Set \"signal\" to {\"tag\":\"...\",\"severity\":\"pos|soft|hard\",\"evidence\":\"quote\"} ONLY when she shows a real green/red signal (e.g. coachable, high intent, blamer/victim, can't afford, uncoachable). Set \"objection\" to {\"text\":\"...\",\"agree\":\"...\",\"reframe\":\"...\"} ONLY when she actually objects. Set \"closer\" to the current CLOSER stage (Clarify|Label|Overview|Sell|Explain|Reinforce) or empty.";
+
+async function askRenee(key){
+  const body={ model:'claude-haiku-4-5-20251001', max_tokens:400, system:RENEE_SYS, messages:convo };
+  const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
+    headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify(body) });
+  if(!r.ok){ throw new Error(r.status+' '+(await r.text()).slice(0,140)); }
+  const j=await r.json();
+  let txt=(j.content&&j.content[0]&&j.content[0].text)||'{}';
+  txt=txt.replace(/```json/gi,'').replace(/```/g,'').trim();
+  const a=txt.indexOf('{'), b=txt.lastIndexOf('}'); if(a>=0&&b>=0) txt=txt.slice(a,b+1);
+  return JSON.parse(txt);
+}
+function applyAI(d){
+  if(d.bant){
+    if(d.bant.budget) setBant('b-budget',d.bant.budget,/no|can.?t|tight|too much/i.test(d.bant.budget)?'warn':'ok');
+    if(d.bant.authority) setBant('b-auth',d.bant.authority,/partner|spouse|no|check|boss/i.test(d.bant.authority)?'warn':'ok');
+    if(d.bant.need) setBant('b-need',d.bant.need,'ok');
+    if(d.bant.timeline) setBant('b-time',d.bant.timeline,'ok');
+  }
+  if(d.signal&&d.signal.tag){ const sev=d.signal.severity==='pos'?'pos':(d.signal.severity==='hard'?'hard':'soft');
+    addChip(d.signal.tag,sev,true); if(sev!=='pos') flagAlert(d.signal.tag,d.signal.evidence||''); }
+  if(d.objection&&d.objection.text){
+    $('objBox').innerHTML='<div class="obj"><div class="h">⚠ Objection heard — “'+esc(d.objection.text)+'”</div>'+
+     '<div class="r"><div class="t">1 · Agree</div><div class="x">'+esc(d.objection.agree)+'</div></div>'+
+     '<div class="r"><div class="t">2 · Reframe with a story</div><div class="x">'+esc(d.objection.reframe)+'</div></div></div>'; }
+  if(d.note) addNote(d.note);
+  if(d.closer) setCloser(d.closer,'live');
+  if(d.coach) setSay('<span class="qmark">“</span>'+esc(d.coach)+'<span class="qmark">”</span>', true);
+}
+async function sendText(txt){
+  txt=(txt||'').trim(); if(!txt) return;
+  const key=getKey();
+  if(!key){ toast('Connect your Anthropic key to chat live'); $('keyBtn').click(); return; }
+  addTranscript('You',txt);
+  convo.push({role:'user',content:txt});
+  $('sendBtn').disabled=true; $('sendBtn').textContent='…';
+  if($('status').classList.contains('idle')){ $('status').className='pill live'; $('status').innerHTML='🎙️ listening'; phOnCall(); }
+  try{
+    const d=await askRenee(key);
+    convo.push({role:'assistant',content:JSON.stringify(d)});
+    if(d.reply){ addTranscript('Renee',d.reply); }
+    applyAI(d);
+    if(d.reply){ micPause(true); await play(ttsUrl(d.reply), d.reply); micPause(false); }
+  }catch(e){ toast('AI error — check your key'); addTranscript('Renee','(couldn’t reach the AI: '+esc(e.message)+')'); }
+  $('sendBtn').disabled=false; $('sendBtn').textContent='Send ▸';
+}
+async function sendChat(){ const t=$('chatInput').value; $('chatInput').value=''; sendText(t); }
+$('sendBtn').onclick=sendChat;
+$('chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sendChat(); } });
+
+/* ===== mic: talk to Renee (Web Speech API speech-to-text) ===== */
+let recog=null, micOn=false, micPaused=false;
+function micPause(state){ if(!recog||!micOn)return; micPaused=state; try{ state?recog.stop():recog.start(); }catch(e){} }
+function initMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return null;
+  const r=new SR(); r.lang='en-US'; r.continuous=true; r.interimResults=true;
+  r.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const res=e.results[i];
+      if(res.isFinal){ const t=(res[0].transcript||'').trim(); if(t){ $('chatInput').value=''; sendText(t); } }
+      else interim+=res[0].transcript;
+    }
+    if(interim) $('chatInput').value=interim;
+  };
+  r.onerror=(e)=>{ if(e.error!=='no-speech'&&e.error!=='aborted') toast('Mic: '+e.error); };
+  r.onend=()=>{ if(micOn&&!micPaused){ try{r.start();}catch(e){} } };
+  return r;
+}
+function toggleMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('Speech-to-text needs Chrome or Edge'); return; }
+  if(!getKey()){ toast('Connect your Anthropic key first'); $('keyBtn').click(); return; }
+  if(!recog) recog=initMic();
+  micOn=!micOn;
+  const b=$('micBtn');
+  if(micOn){ micPaused=false; try{recog.start();}catch(e){} b.classList.add('on'); b.textContent='🔴';
+    $('status').className='pill live'; $('status').innerHTML='🎙️ listening (mic)'; phOnCall(); toast('Mic on — talk to Renee'); }
+  else { try{recog.stop();}catch(e){} b.classList.remove('on'); b.textContent='🎤'; toast('Mic off'); }
+  var pm=$('phMic'); if(pm){ pm.classList.toggle('on',micOn); pm.textContent=micOn?'🔴':'🎤'; }
+}
+$('micBtn').onclick=toggleMic;
+/* AI key + mic now live on the phone's compose row (chatbar is hidden) */
+function updatePhKey(){ var k=$('phKey'); if(k) k.classList.toggle('ready', !!getKey()); }
+$('phKey').onclick=()=>{ $('keyBtn').click(); updatePhKey(); };
+$('phMic').onclick=()=>$('micBtn').click();
+updatePhKey();
+setAiStatus();
+/* only grab the chat input when the live-AI tester is connected — otherwise leave
+   focus free so the 1–4 / ↵ keyboard loop works for the scripted demo */
+setTimeout(()=>{ try{ if(getKey()) $('chatInput').focus({preventScroll:true}); }catch(e){} },300);
+
+/* ===== Close the deal: book + charge (simulated) ===== */
+function setPay(t,cls){ $('payStatus').className='cstatus '+(cls||''); $('payStatus').innerHTML=t; }
+var bkMode='closed';
+function setBkMode(m){
+  bkMode=m;
+  document.querySelectorAll('.bkmode').forEach(b=>b.classList.toggle('sel',b.dataset.m===m));
+  const nm=curProspectObj().nm;
+  $('bkDesc').innerHTML =
+    m==='callback' ? 'Pick when '+nm+' wants you to call back — we’ll text a reminder and queue them for that time.'
+    : m==='closed' ? 'Client Success · 15 min — guide '+nm+' to pull the <b>MyFICO 3-bureau (3B) report</b> together, then onboard to the EPIC LIFE portal.'
+    : 'Client Success pulls '+nm+'’s <b>MyFICO 3B report</b> on the call, then brings in a <b>senior closer</b> to close on the demo Zoom ('+nm+' + partner).';
+}
+document.querySelectorAll('.bkmode').forEach(b=>b.onclick=()=>setBkMode(b.dataset.m));
+setBkMode('closed');
+
+/* calendar — pick a weekday in the next 2 weeks + a time (for both booking modes) */
+const CAL_TIMES=['9:00 am','10:30 am','1:00 pm','2:30 pm','4:00 pm'];
+let calDate=null, calTime=null;
+function renderCalDates(){
+  const box=$('calDates'); if(!box) return;
+  const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; const base=new Date(); let html='';
+  for(let i=0;i<14;i++){ const d=new Date(base.getTime()+i*86400000); const g=d.getDay();
+    const md=(d.getMonth()+1)+'/'+d.getDate(); const lbl=dows[g]+' '+md; const wk=(g===0||g===6)?' wknd':'';
+    html+='<button class="cal-date'+wk+'" data-lbl="'+lbl+'"><span class="dow">'+dows[g]+'</span>'+md+'</button>';
+  }
+  box.innerHTML=html; calDate=null; calTime=null; renderCalTimes();
+  box.querySelectorAll('.cal-date').forEach(b=>b.onclick=()=>{ box.querySelectorAll('.cal-date').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); calDate=b.getAttribute('data-lbl'); calTime=null; renderCalTimes(); });
+}
+function renderCalTimes(){
+  const box=$('calTimes'); if(!box) return;
+  box.innerHTML=calDate? CAL_TIMES.map(t=>'<button class="cal-time" data-t="'+t+'">'+t+'</button>').join('') : '';
+  box.querySelectorAll('.cal-time').forEach(b=>b.onclick=()=>{ box.querySelectorAll('.cal-time').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); calTime=b.getAttribute('data-t'); var when=calDate+' · '+calTime, nm=curProspectObj().nm, cb=(bkMode==='callback'); maybeConfirm(confirmBooking, cb?'Confirm callback':'Confirm booking', cb?('Schedule a callback with <b>'+esc(nm)+'</b> for <b>'+when+'</b>?'):('Book <b>'+when+'</b> for <b>'+esc(nm)+'</b> and text the confirmation?'), cb?'Schedule it':'Book it'); });
+}
+function confirmBooking(){
+  if(!calDate||!calTime) return; const when=calDate+' · '+calTime, nm=curProspectObj().nm;
+  $('bookStatus').className='cstatus ok';
+  if(bkMode==='callback'){
+    $('bookStatus').innerHTML='✅ Callback scheduled with '+nm+' · <b>'+when+'</b>';
+    phMsg('📞 Scheduled a callback with you — '+when+'. Talk then!','me');
+    try{ selectOutcome('callback'); }catch(e){}
+    toast('Callback set — '+when);
+  } else if(bkMode==='closed'){
+    $('bookStatus').innerHTML='✅ 3B onboarding booked — '+nm+' + Client Success · <b>'+when+'</b>';
+    phMsg('📅 Booked your <b>3B onboarding call</b> — '+when+'. We’ll pull your MyFICO 3-bureau report together and set up your EPIC LIFE portal.','me');
+    try{ selectOutcome('booked'); }catch(e){}
+    toast('Booked 3B — '+when);
+  } else {
+    $('bookStatus').innerHTML='✅ 3B + closer call booked — '+nm+' + partner + Client Success + closer · <b>'+when+'</b>';
+    phMsg('📅 Booked your <b>3B strategy call</b> — '+when+'. We’ll pull your MyFICO 3-bureau report together and walk you + your partner through the full plan.','me');
+    try{ selectOutcome('booked'); }catch(e){}
+    toast('Booked 3B — '+when);
+  }
+}
+renderCalDates();
+
+/* payment plans — rep picks the tier before sending the link */
+const PLANS={
+  monthly:{label:'Monthly', price:'$800 to start, then $300/mo', short:'$800 to start · $300/mo', link:'pay.tla.co/r/epic-mo', collect:800, tag:'12-mo commitment', incl:[
+    'Credit Audit & Protection Plan','Credit Builder Program','Personal Debt Exit Strategy','Family Income Protection Strategy',
+    'EPIC LIFE Portal + assigned Coach','Banking Relationship Coaching','Liability Holding Company structuring','Business Insurance Review',
+    'Monthly webinars + EPIC Saturday workshops']},
+  annual:{label:'Annual', price:'$3,500 to start, then $3,000/yr', short:'$3,500 to start · $3,000/yr', link:'pay.tla.co/r/epic-yr', collect:3500, tag:'Best value · save $600/yr', incl:[
+    'Everything in Monthly, plus:','5× referral points on every enrollment','Priority support & workshop access','Exclusive annual member events',
+    'Personal Credit & Cashflow Management','Personal Debt Paydown Plan','Access to Capital — Personal LOCs & HELOCs','On-demand video library']},
+  pro:{label:'Pro', price:'$9,700/yr', short:'$9,700/yr (billed annually)', link:'pay.tla.co/r/epic-pro', collect:9700, tag:'Premium', incl:[
+    'Everything in Annual, plus:','Agency website + pro email + business phone','Google Business Profile, D-U-N-S, Nav monitoring','Brand presence + basic SEO',
+    'Business Credit & Cashflow Management','Bookkeeping + Tax Review (business & personal)','Custom Real Estate Strategy','Turnkey & off-market property access','RE lending vendors + deal calculators']}
+};
+let curPlan='monthly';
+function setPlan(p){ curPlan=p; document.querySelectorAll('#planChips .plan').forEach(b=>b.classList.toggle('sel',b.dataset.p===p));
+  var pl=PLANS[p], d=$('planDesc'); if(d) d.innerHTML='<div class="plan-price">'+pl.price+' <span class="muted" style="font-weight:500;font-size:.72rem">· '+pl.tag+'</span></div><ul class="plan-incl">'+pl.incl.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'; }
+document.querySelectorAll('#planChips .plan').forEach(b=>b.onclick=()=>setPlan(b.dataset.p));
+setPlan('monthly');
+
+/* recommend the most relevant tier from what we know about the prospect */
+function recommendTier(){
+  var b=$('b-budget'); if(b.classList.contains('warn')||b.classList.contains('bad')) return 'monthly';
+  var ctx=($('notes').textContent+' '+$('transcript').textContent).toLowerCase();
+  if(/real estate|propert|rental|invest|website|scal|business credit|expand|d-u-n-s|bookkeep|agency/.test(ctx)) return 'pro';
+  return 'annual';
+}
+function openPayPop(){
+  var t=recommendTier(), nm=curProspectObj().nm;
+  var why={monthly:'budget-friendly entry',annual:'best value — fits most owners',pro:'wants the business + real-estate build-out'}[t];
+  setPlan(t);
+  $('planRec').innerHTML='⭐ Suggested for '+esc(nm)+': <b>'+PLANS[t].label+'</b> — '+why;
+  openPop('payPop');
+}
+
+/* ===== Close-the-deal decision layer: recommended tier + readiness + closing line + primary CTA ===== */
+function closeReadiness(){
+  var hardFlag=document.querySelectorAll('#chips .chip.hard').length>0;
+  var afford=!$('b-budget').classList.contains('bad');
+  var bantFilled=['b-budget','b-auth','b-need','b-time'].filter(function(id){var v=$(id).querySelector('.v').textContent; return v&&v!=='—';}).length;
+  if(hardFlag) return {k:'walk', label:'🔴 Walk — hard flag heard', cta:'nq'};
+  if(!afford) return {k:'walk', label:'🔴 Can’t afford the base (~$300/mo)', cta:'nq'};
+  if(bantFilled>=3) return {k:'ready', label:'🟢 Qualified — ready to close', cta:'pay'};
+  return {k:'qualify', label:'🟡 Keep qualifying — '+bantFilled+'/4 BANT filled', cta:'book'};
+}
+function relevantIncl(tier){
+  var ctx=($('b-need').querySelector('.v').textContent+' '+$('notes').textContent+' '+$('transcript').textContent).toLowerCase();
+  var list=PLANS[tier].incl.filter(function(x){return !/everything in/i.test(x);});
+  var scored=list.map(function(x){ var hits=x.toLowerCase().split(/[^a-z]+/).filter(function(w){return w.length>4 && ctx.indexOf(w)>=0;}).length; return {x:x,s:hits}; });
+  scored.sort(function(a,b){return b.s-a.s;});
+  return scored.slice(0,3).map(function(o){return o.x;});
+}
+function closeLineText(tier, status, nm){
+  var pl=PLANS[tier];
+  if(status==='ready') return '“So '+nm+', let’s get you started on '+pl.label+' today — '+pl.short+'. I’ll text your checkout link right now, sound good?”';
+  if(status==='qualify') return '“'+nm+', from what you’ve shared, '+pl.label+' is the fit. Let’s lock a quick 3B call to pull your numbers and map it out — this week or next?”';
+  return '';
+}
+function renderClose(){
+  if(!$('closeRec')) return;
+  try{
+    var tier=recommendTier(), nm=curProspectObj().nm, r=closeReadiness(), pl=PLANS[tier];
+    $('closeRec').innerHTML='<div><span class="cr-tier">⭐ '+esc(pl.label)+'</span><span class="cr-price">'+esc(pl.short)+'</span></div>'+
+      '<ul class="cr-incl">'+relevantIncl(tier).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+    $('closeReady').className='close-ready '+r.k; $('closeReady').textContent=r.label;
+    var line=closeLineText(tier,r.k,nm);
+    $('closeLine').innerHTML = line ? '<div class="cl-lbl">🗣️ Your close</div><div class="cl-say">'+esc(line)+'</div>' : '';
+    var cta=$('ctaPrimary');
+    if(r.cta==='pay'){ cta.textContent='💳 Take payment · '+pl.label+' ('+pl.short+')'; cta.className='cta-primary pay'; cta.onclick=openPayPop; }
+    else if(r.cta==='book'){ cta.textContent='📅 Book the 3B call'; cta.className='cta-primary'; cta.onclick=function(){openPop('bookPop');}; }
+    else { cta.textContent='🚫 Mark not qualified'; cta.className='cta-primary walk'; cta.onclick=function(){ selectOutcome('nq'); toast('Marked not qualified — pick a reason'); }; }
+  }catch(e){}
+}
+renderClose();
+
+async function sendPaymentLink(){
+  if($('payBtn').disabled){ toast('Payment link already sent'); return; }
+  $('payBtn').disabled=true;
+  const nm=curProspectObj().nm, pl=PLANS[curPlan];
+  setPay('📲 '+pl.label+' link sent to '+nm+'…','');
+  phMsg('💳 Your secure checkout for EPIC LIFE '+pl.label+' — '+pl.short+':<br><span class="lk">'+pl.link+'</span>','me');
+  await wait(1600); setPay('👀 '+nm+' opened the payment page…','');
+  await wait(2000); setPay('✅ Paid — '+pl.short+' ('+pl.label+')','ok');
+  phMsg('<span class="ttl">Payment received ✅</span>Welcome to EPIC LIFE '+pl.label+' — '+pl.short+'.','ok');
+  toast('Payment received 🎉'); bump('s-book');
+  $('s-closed').textContent=parseInt($('s-closed').textContent,10)+1; revenue+=pl.collect; updateRev();
+  dealPaid=true; try{ selectOutcome('won'); }catch(e){}
+  try{ setBkMode('closed'); }catch(e){}
+}
+$('payBtn').onclick=()=>{ if($('payBtn').disabled){ toast('Payment link already sent'); return; } var pl=PLANS[curPlan], nm=curProspectObj().nm; maybeConfirm(sendPaymentLink,'Send payment link','Text <b>'+esc(nm)+'</b> the <b>'+pl.label+'</b> checkout link — '+pl.short+'?','Send link'); };
+
+/* ===== Rep phone: call timer + text thread + quick-send dock ===== */
+let callTimerId=null, callSecs=0;
+function fmtT(s){ const m=Math.floor(s/60), ss=s%60; return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss; }
+function startCallTimer(){ stopCallTimer(); callSecs=0; const t=$('phTimer'); if(t)t.textContent='00:00';
+  callTimerId=setInterval(()=>{ callSecs++; const el=$('phTimer'); if(el)el.textContent=fmtT(callSecs); },1000); }
+function stopCallTimer(){ if(callTimerId){ clearInterval(callTimerId); callTimerId=null; } }
+function phOnCall(){ phCall('📞 '+curProspectObj().nm+' · <span id="phTimer">00:00</span>',''); startCallTimer(); }
+function phEndCall(){ stopCallTimer(); phCall(null); }
+function phSendRep(html){ phMsg(html,'me'); toast('Text sent 📤'); }
+/* dock actions open a pop-up (pick a tier / time / platform) instead of firing blind */
+function openPop(id){ closePops(); const el=$(id); if(el) el.classList.remove('hidden'); }
+function closePops(){ ['payPop','bookPop','videoPop','contentPop','emailPop'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); }
+function firePhoneQuick(q){
+  if(q==='pay') openPayPop();
+  else if(q==='book') openPop('bookPop');
+  else if(q==='content') openPop('contentPop');
+  else if(q==='video'||q==='zoom') openPop('videoPop');
+}
+document.querySelectorAll('#phQuick button').forEach(b=>b.onclick=()=>firePhoneQuick(b.getAttribute('data-q')));
+
+/* Mobile = confirm before any action that texts the prospect or takes payment (a stray
+   tap on a phone shouldn't send). Desktop stays one-tap for speed. */
+function isMobile(){ try{ return window.matchMedia('(max-width:720px)').matches || window.matchMedia('(pointer:coarse)').matches; }catch(e){ return false; } }
+let _confirmCb=null;
+function hideConfirm(){ var el=$('confirmPop'); if(el) el.classList.add('hidden'); _confirmCb=null; }
+function askConfirm(title,msg,okLabel,cb){ $('confirmTitle').textContent=title; $('confirmMsg').innerHTML=msg; $('confirmYes').textContent=okLabel||'Confirm'; _confirmCb=cb; $('confirmPop').classList.remove('hidden'); }
+/* always confirm before texting the prospect (mobile or desktop) — a tap can't fire blind */
+function maybeConfirm(fn,title,msg,okLabel){ askConfirm(title,msg,okLabel,fn); }
+$('confirmYes').onclick=()=>{ var cb=_confirmCb; hideConfirm(); if(cb) cb(); };
+$('confirmNo').onclick=hideConfirm;
+$('confirmX').onclick=hideConfirm;
+$('confirmPop').onclick=(e)=>{ if(e.target===$('confirmPop')) hideConfirm(); };
+
+/* video-call invite — rep picks Zoom or FaceTime, we text the join link */
+function sendVideoInvite(v){
+  if(v==='teams') phSendRep('💠 Here’s our Microsoft Teams link for the video call:<br><span class="lk">teams.microsoft.com/l/meetup/epic-life</span>');
+  else phSendRep('🔗 Here’s our Zoom room for the strategy call:<br><span class="lk">zoom.us/j/855-epic-life</span>');
+  closePops();
+}
+document.querySelectorAll('#videoPop .vidbtn').forEach(b=>b.onclick=()=>{ var v=b.getAttribute('data-v'), nm=curProspectObj().nm, label=(v==='teams'?'Microsoft Teams':'Zoom'); maybeConfirm(()=>sendVideoInvite(v),'Send video invite','Text <b>'+esc(nm)+'</b> a <b>'+label+'</b> video-call invite?','Send invite'); });
+
+/* content library — text a piece of content to the prospect */
+const CONTENT=[
+ {icon:'🎬', t:'How EPIC LIFE works', s:'2-min overview video', link:'tla.co/v/epic-intro'},
+ {icon:'💳', t:'Plans & pricing', s:'Monthly / Annual / Pro — what each includes', link:'tla.co/d/pricing'},
+ {icon:'🛡️', t:'Capital Access & Debt Protection', s:'Credit Builder · Debt Exit · Family Income Protection', link:'tla.co/d/protection'},
+ {icon:'🏦', t:'Access to Capital', s:'Personal LOCs & HELOCs (Annual+)', link:'tla.co/d/capital'},
+ {icon:'🏢', t:'Business build-out (Pro)', s:'Website · business credit · D-U-N-S · bookkeeping', link:'tla.co/d/business'},
+ {icon:'🏠', t:'Real Estate strategy (Pro)', s:'Turnkey & off-market access + lending vendors', link:'tla.co/d/realestate'}
+];
+function renderContent(){
+  const box=$('contentList'); if(!box) return;
+  box.innerHTML=CONTENT.map((c,i)=>'<button class="content-item" data-i="'+i+'"><span class="ci">'+c.icon+'</span><span><span class="ct-t">'+esc(c.t)+'</span><br><span class="ct-s">'+esc(c.s)+'</span></span></button>').join('');
+  box.querySelectorAll('.content-item').forEach(b=>b.onclick=()=>{ var c=CONTENT[parseInt(b.getAttribute('data-i'),10)], nm=curProspectObj().nm;
+    maybeConfirm(()=>{ phSendRep(c.icon+' '+esc(c.t)+':<br><span class="lk">'+c.link+'</span>'); closePops(); }, 'Send content', 'Text <b>'+esc(nm)+'</b> “'+esc(c.t)+'”?', 'Send'); });
+}
+renderContent();
+
+/* ===== BANK personality read (close-the-deal card) ===== */
+const BANK={
+ B:{ic:'🔵',name:'Blueprint',drive:'Structure, systems, security, consistency — wants proof and a plan.',pitch:'Lead with the step-by-step process, the track record, the guarantees. Show the exact roadmap. Don’t rush them.',close:'“Here’s exactly how it works, step by step — and the proof it delivers. Shall we lock in the plan?”'},
+ A:{ic:'🔴',name:'Action',drive:'Speed, fun, results now, big opportunity — hates boredom and fine print.',pitch:'Keep it fast and exciting. Big-picture wins, act-now urgency, make it easy to say yes today.',close:'“You’re ready — let’s just get you started today and hit the ground running. Sending the link now.”'},
+ N:{ic:'🟢',name:'Nurturing',drive:'Relationships, people, helping, authenticity — buys from people they trust.',pitch:'Connect first, sell second. Emphasize the community, the assigned coach, how it protects their family. Be real.',close:'“I really want to see you and your family win with this. Let’s get you in — I’ll personally make sure you’re taken care of.”'},
+ K:{ic:'🟡',name:'Knowledge',drive:'Data, facts, expertise, competence — wants to be the expert in the room.',pitch:'Bring the numbers. Details, credentials, exactly how the 3B / FinFit strategy works, the ROI. Let them feel smart.',close:'“You’ve seen the numbers and how the strategy works — it’s the logical move. Ready to put it to work?”'}
+};
+let bankManual=false;
+/* auto-read the prospect's BANK type from how they talk (keyword heuristic; AI refines it when a key is connected) */
+const BANK_KW={
+ B:['process','step','how does it','how it works','proof','guarantee','safe','risk','detail','exactly','structure','plan','cautious','system','secure','protect','careful','make sure','consistent','stable'],
+ A:["let's go",'let’s go','fast','right now','today','excit','opportunit','results','quick','just do it','go for it','jump in','asap','make it happen'],
+ N:['family','team','help','people','trust','relationship','together','care','kids','wife','husband','partner','community','feel','loyal'],
+ K:['data','number','research','compare','expert','roi','study','facts','prove','understand','learn','analy','breakdown','stats','evidence','how much']
+};
+function scoreBank(txt){ txt=(txt||'').toLowerCase(); var s={B:0,A:0,N:0,K:0}; Object.keys(BANK_KW).forEach(function(k){ BANK_KW[k].forEach(function(w){ if(txt.indexOf(w)>=0) s[k]++; }); }); return s; }
+function detectBank(){ var txt=$('transcript').textContent+' '+$('notes').textContent+' '+[].map.call(document.querySelectorAll('#chips .chip'),function(c){return c.textContent;}).join(' ');
+  var s=scoreBank(txt), best=null, bv=0; ['N','B','K','A'].forEach(function(k){ if(s[k]>bv){bv=s[k];best=k;} }); return bv>0?best:null; }
+function autoBank(){ if(bankManual) return; var b=detectBank(); if(b) pickBank(b,true); }
+function pickBank(b, auto){
+  if(!auto) bankManual=true;
+  document.querySelectorAll('#bankTypes .bank-t').forEach(x=>x.classList.toggle('sel',x.getAttribute('data-b')===b));
+  var d=BANK[b]; if(!d) return;
+  $('bankRead').innerHTML=(auto?'<div class="bank-auto">🔮 Auto-read from the call — tap a type to confirm or change</div>':'')+
+    '<div class="bank-name">'+d.ic+' '+d.name+'</div>'+
+    '<div class="bank-drive"><b>Driven by:</b> '+esc(d.drive)+'</div>'+
+    '<div class="bank-pitch"><b>How to close them:</b> '+esc(d.pitch)+'</div>'+
+    '<div class="cl-say" style="margin-top:8px">'+esc(d.close)+'</div>';
+}
+document.querySelectorAll('#bankTypes .bank-t').forEach(b=>b.onclick=()=>pickBank(b.getAttribute('data-b')));
+
+/* ===== Email the prospect — templated draft + send ===== */
+function prospectEmail(p){ if(p.email) return p.email; var first=(p.nm||'').split(' ')[0].toLowerCase(); var co=((p.sub||'').split('·')[0]||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,''); return first+'@'+(co||'business')+'.com'; }
+var emTpl='proposal';
+function emailContent(t){
+  var p=curProspectObj(), nm=(p.nm||'').split(' ')[0], pl=PLANS[recommendTier()];
+  if(t==='event') return {s:'You’re invited: EPIC Saturday workshop',
+    b:'Hi '+nm+',\n\nWe run a live members workshop — EPIC Saturday — where we walk through the exact credit + capital playbook. I’d love for you to sit in as my guest.\n\nWhen: this Saturday, 10:00am\nWhere: Zoom (I’ll send the link)\n\nWant me to save you a seat?\n\n— Your name, Team Life Academy'};
+  if(t==='game') return {s:'Try this — a 36-month entrepreneur simulation',
+    b:'Hi '+nm+',\n\nWhile you’re thinking it over, play this — a quick browser game that simulates 36 months of building a business (good debt → credit → cash flow → passive income). It’s the exact strategy EPIC LIFE is built on, and it’s a little addictive.\n\nPlay free: https://brucelin-tla.github.io/entrepreneur-paradise/\n\nText me your net-worth score when you finish 😉\n\n— Your name, Team Life Academy'};
+  return {s:'Your EPIC LIFE proposal, '+nm,
+    b:'Hi '+nm+',\n\nGreat talking today. Based on what you shared, here’s your EPIC LIFE '+pl.label+' plan — '+pl.short+'.\n\nWhat you get:\n• '+pl.incl.filter(function(x){return !/everything in/i.test(x);}).slice(0,5).join('\n• ')+'\n\nReady when you are — reply here or grab a time and we’ll pull your 3B report together.\n\n— Your name, Team Life Academy'};
+}
+function fillEmail(t){ emTpl=t; document.querySelectorAll('#emTemplates .em-tpl').forEach(b=>b.classList.toggle('sel',b.getAttribute('data-t')===t));
+  var c=emailContent(t); $('emSubject').value=c.s; $('emBody').value=c.b; }
+function openEmailPop(){ var em=prospectEmail(curProspectObj()); $('emTo').textContent='to '+em; fillEmail('proposal');
+  $('emStatus').className='cstatus'; $('emStatus').textContent='Draft ready — tweak it, then send.'; $('emSend').disabled=false; openPop('emailPop'); }
+document.querySelectorAll('#emTemplates .em-tpl').forEach(b=>b.onclick=()=>fillEmail(b.getAttribute('data-t')));
+$('emailLink').onclick=openEmailPop;
+$('emSend').onclick=function(){ var em=prospectEmail(curProspectObj()), nm=curProspectObj().nm, subj=$('emSubject').value;
+  maybeConfirm(function(){ $('emSend').disabled=true; $('emStatus').className='cstatus ok'; $('emStatus').textContent='✅ Sent to '+em; toast('📧 Email sent — '+subj); },
+    'Send email','Email <b>'+esc(nm)+'</b> ('+esc(em)+') — <b>'+esc(subj)+'</b>?','Send'); };
+
+/* pop-up dismiss: ✕ button or a tap on the backdrop */
+document.querySelectorAll('[data-pop-close]').forEach(x=>x.onclick=closePops);
+['payPop','bookPop','videoPop','contentPop','emailPop'].forEach(id=>{ const el=$(id); if(el) el.onclick=(e)=>{ if(e.target===el) closePops(); }; });
+
+/* text the prospect + get a live AI reply (DM sales) */
+function smsSys(){
+  const p=curProspectObj(); const co=((p.sub||'').split('·')[0]||'a small business').trim();
+  return "You are "+p.nm+", owner of "+co+", a small business owner. A sales rep from Team Life Academy is TEXTING you about an EPIC LIFE membership ($800 to start, then $300/month — business growth + financial protection: credit building, debt payoff, access to capital). Reply exactly as "+p.nm+" would over text: short, casual, realistic, a bit busy and guarded at first; ask normal questions; raise natural objections (price, timing, \"let me think about it\", needing to check with your partner); warm up if the rep handles you well. Keep replies to 1-2 short sentences like a real text. Reply with ONLY your text back — no name labels, no quotes.";
+}
+async function prospectTextReply(){
+  const key=getKey(); if(!key) return;
+  const typing=document.createElement('div'); typing.className='bubble them'; typing.textContent='…';
+  $('phMsgs').appendChild(typing); $('phMsgs').scrollTop=$('phMsgs').scrollHeight;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:120,system:smsSys(),messages:smsConvo}) });
+    if(typing.parentNode) typing.remove();
+    if(!r.ok){ throw new Error(r.status+''); }
+    const j=await r.json();
+    let txt=((j.content&&j.content[0]&&j.content[0].text)||'').trim().replace(/^["']+|["']+$/g,'');
+    if(txt){ smsConvo.push({role:'assistant',content:txt}); phMsg(esc(txt),'them'); }
+  }catch(e){ if(typing.parentNode) typing.remove(); phMsg('<span class="muted">(couldn’t reach the AI — check the 🔑 key)</span>','sys'); }
+}
+function repTexted(text){
+  phMsg('💬 '+esc(text),'me');
+  if(!getKey()){ if(!smsHinted){ smsHinted=true; phMsg('Tap 🔑 below to connect the AI prospect and get live text replies.','sys'); } return; }
+  smsConvo.push({role:'user',content:text});
+  prospectTextReply();
+}
+function phComposeSend(){ const t=$('phInput').value.trim(); if(!t) return; $('phInput').value=''; repTexted(t); }
+$('phSend').onclick=phComposeSend;
+$('phInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); phComposeSend(); } });
+
+/* Call / End button on the phone itself */
+function setPhCallBtn(){ var b=$('phCallBtn'); if(!b)return; b.className='ph-callbtn'+(started?' end':''); b.textContent=started?'⛔ End':'📞 Call'; }
+$('phCallBtn').onclick=()=>{ if(started){ resetDemo(); } else { $('startBtn').click(); setPhCallBtn(); } };
+setPhCallBtn();
+
+/* ===== timezone / quiet-hours guard + caller-ID + daily mission ===== */
+function updateTiming(){
+  try{
+    const now=new Date();
+    const tz=curTz||'America/New_York', tzL=curTzL||'ET';
+    const t=now.toLocaleTimeString('en-US',{timeZone:tz,hour:'numeric',minute:'2-digit'});
+    let hr=parseInt(now.toLocaleString('en-US',{timeZone:tz,hour:'numeric',hour12:false}),10); if(hr===24)hr=0;
+    $('locTime').textContent=t+' '+tzL;
+    let st,cls;
+    if(hr<8||hr>=21){ st='⛔ Quiet hours — don’t call'; cls='qbad'; }
+    else if(hr<9||hr>=19){ st='⚠️ Off-peak'; cls='qmid'; }
+    else { st='✅ Good time to call'; cls='qok'; }
+    const el=$('tzStatus'); el.textContent=st; el.className=cls;
+  }catch(e){}
+}
+const GOAL={dials:40,conn:10,book:3};
+function gset(v,bar,goalEl,val,goal){
+  $(v).textContent=val+'/'+goal;
+  $(bar).style.width=Math.min(100,Math.round(val/goal*100))+'%';
+  const g=$(goalEl); if(g&&val>=goal&&!g.classList.contains('done')){ g.classList.add('done'); toast('🎯 Mission goal hit!'); }
+}
+function updateMission(){
+  gset('gd','bd','goalDials',parseInt($('s-dials').textContent,10),GOAL.dials);
+  gset('gc','bc','goalConn',parseInt($('s-conn').textContent,10),GOAL.conn);
+  gset('gb','bb','goalBook',parseInt($('s-book').textContent,10),GOAL.book);
+}
+updateMission(); setFocus('all', true); setInterval(updateTiming,30000);
+
+/* ===== prospect's-phone view ===== */
+function phMsg(html,cls){ const m=$('phMsgs'); if(!m)return; const e=m.querySelector('.ph-empty'); if(e)e.remove();
+  const d=document.createElement('div'); d.className='bubble '+(cls||'them'); d.innerHTML=html; m.appendChild(d); m.scrollTop=m.scrollHeight; }
+function phCall(html,cls){ const c=$('phCall'); if(!c)return;
+  if(html===null){ c.className='ph-call hidden'; c.innerHTML=''; }
+  else { c.className='ph-call'+(cls?(' '+cls):''); c.innerHTML=html; } }
+
+/* ===== Update detection: poll version.json, prompt to reload on a new build ===== */
+const APP_VERSION=PATCH_NOTES[0].v;
+function showUpdateBar(v){
+  if(document.getElementById('updbar'))return;
+  const b=document.createElement('div'); b.id='updbar';
+  b.innerHTML='🔄 A new version is available.'+
+    ' <button id="updNow">Update now</button>'+
+    ' <span class="x" id="updX" title="dismiss">✕</span>';
+  document.body.appendChild(b); document.body.style.paddingTop='52px';
+  document.getElementById('updNow').onclick=()=>{ location.replace(location.pathname+'?v='+encodeURIComponent(v)); };
+  document.getElementById('updX').onclick=()=>{ b.remove(); document.body.style.paddingTop=''; };
+}
+async function checkUpdate(){
+  try{
+    const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return; const j=await r.json();
+    if(j&&j.v&&j.v!==APP_VERSION) showUpdateBar(j.v);
+  }catch(e){}
+}
+checkUpdate();
+setInterval(checkUpdate,60000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkUpdate(); });
+
+/* What's-new: clickable version + auto-open the changelog once per new build */
+$('ver').textContent='v'+APP_VERSION+" · what's new";
+$('ver').onclick=openChangelog;
+$('clClose').onclick=closeChangelog;
+$('clModal').onclick=(e)=>{ if(e.target===$('clModal')) closeChangelog(); };
+/* Non-blocking new-build notice: highlight the version link + a quick toast — never auto-open a modal over the cockpit */
+try{ if(localStorage.getItem('cockpit_seen_v')!==APP_VERSION){ $('ver').classList.add('ver-new'); setTimeout(()=>toast("🆕 What's new in v"+APP_VERSION+" — tap the version below"),700); } }catch(e){}
+</script>
+
+<!-- ===== EPIC Suite: beta toggle chip (self-contained; Closer keeps its own What's-new) ===== -->
+<style>
+#epicChip{position:fixed;top:9px;right:12px;z-index:1200;display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);box-shadow:0 2px 10px rgba(0,0,0,.4);user-select:none;white-space:nowrap}
+#epicChip:hover{border-color:var(--accent);color:var(--text)}
+#epicChip.beta{background:rgba(245,158,11,.18);border-color:var(--gold);color:#ffd58a;animation:epicPulse 2s ease-in-out infinite}
+@keyframes epicPulse{0%,100%{opacity:1}50%{opacity:.6}}
+body{padding-top:46px}
+.epic-modal{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.epic-modal.hidden{display:none}
+.epic-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:left}
+.epic-box h3{font-size:1.05rem;margin-bottom:6px}
+.epic-box p{font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.epic-box input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:1rem;letter-spacing:2px;text-align:center;text-transform:uppercase}
+.epic-box input:focus{outline:none;border-color:var(--gold)}
+.epic-err{color:var(--red);font-size:.76rem;margin-top:8px;min-height:16px;text-align:center}
+.epic-row{display:flex;gap:8px;margin-top:14px}
+.epic-row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:800;font-size:.85rem;cursor:pointer}
+.epic-go{background:var(--gold);color:#1a1200}.epic-cancel{background:var(--surface2);color:var(--text)}
+</style>
+<script>
+(function(){
+  var CODE='EPICBETA', KEY='epic_mode';
+  var E=window.EPIC=window.EPIC||{};
+  var FILE=/\.html?$/i.test(location.pathname);
+  E.isBeta=function(){ if(/\/beta(\/|$)/.test(location.pathname)) return true; if(FILE){try{return localStorage.getItem(KEY)==='beta'}catch(e){}} return false; };
+  function gotoBeta(){ try{localStorage.setItem(KEY,'beta')}catch(e){} if(FILE){location.reload();return;} location.href=location.pathname.replace(/(live|setter|referral|success)\/$/,'')+'beta/'; }
+  function gotoLive(){ try{localStorage.setItem(KEY,'live')}catch(e){} if(FILE){location.reload();return;} location.href=location.pathname.replace(/beta\/(live\/|setter\/|referral\/|success\/)?$/,''); }
+  var chip=document.createElement('div'); chip.id='epicChip';
+  function paint(){ if(E.isBeta()){chip.className='beta';chip.textContent='🧪 BETA · back to Live';chip.title="You're on the beta build — tap to return to Live";}
+    else{chip.className='';chip.textContent='🟢 Live · try beta';chip.title='Tap to enter the beta preview (code required)';} }
+  paint();
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>🧪 Try the beta</h3><p>Enter your beta code to preview the newest in-progress build across the EPIC Suite. Switch back to Live anytime from the chip in the corner.</p><input id="epicCodeIn" placeholder="beta code" autocomplete="off" spellcheck="false"><div class="epic-err" id="epicErr"></div><div class="epic-row"><button class="epic-cancel" id="epicCancel">Cancel</button><button class="epic-go" id="epicGo">Unlock beta</button></div></div>';
+  function showM(){m.classList.remove('hidden');var i=m.querySelector('#epicCodeIn');i.value='';m.querySelector('#epicErr').textContent='';setTimeout(function(){i.focus()},30);}
+  function hideM(){m.classList.add('hidden');}
+  function submitM(){var v=(m.querySelector('#epicCodeIn').value||'').trim().toUpperCase();
+    if(v===CODE){gotoBeta();}else{m.querySelector('#epicErr').textContent="That code didn't match. Try again.";}}
+  chip.onclick=function(){ if(E.isBeta()){gotoLive();} else {showM();} };
+  document.body.appendChild(chip); document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m)hideM();});
+  m.querySelector('#epicCancel').onclick=hideM; m.querySelector('#epicGo').onclick=submitM;
+  m.querySelector('#epicCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')submitM();});
+})();
+</script>
+
+<!-- ===== EPIC Suite: suggestion box → Supabase (central review) ===== -->
+<style>
+.epic-sugg-btn{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;padding:5px 11px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);vertical-align:middle;margin-left:8px}
+.epic-sugg-btn:hover{border-color:var(--accent);color:var(--text)}
+.epic-sugg-ta{width:100%;min-height:120px;padding:11px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem;font-family:inherit;resize:vertical}
+.epic-sugg-ta:focus{outline:none;border-color:var(--accent)}
+.epic-sugg-ok{background:var(--accent);color:#062a1e}
+</style>
+<script>
+(function(){
+  var SB_URL='https://widdgynledwpqaqndtvz.supabase.co';
+  var SB_KEY='sb_publishable_YTOYoDxjm7MpIuvvSjwOyQ_ToGCW3PQ';
+  var ROLE='EPIC Closer';
+  function say(t){ try{ if(typeof toast==='function'){toast(t);return;} }catch(e){}
+    var d=document.createElement('div'); d.textContent=t;
+    d.style.cssText='position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:700;z-index:1400';
+    document.body.appendChild(d); setTimeout(function(){d.remove();},2400); }
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>💡 Share an idea</h3><p>What would make <b>'+ROLE+'</b> better? Your suggestion goes straight to Bruce for review.</p><textarea class="epic-sugg-ta" id="epicSuggTa" placeholder="An idea, a bug, or something confusing…"></textarea><div class="epic-err" id="epicSuggErr"></div><div class="epic-row"><button class="epic-cancel" id="epicSuggCancel">Cancel</button><button class="epic-go epic-sugg-ok" id="epicSuggSend">Send to Bruce</button></div></div>';
+  function show(){ m.classList.remove('hidden'); var t=m.querySelector('#epicSuggTa'); t.value=''; m.querySelector('#epicSuggErr').textContent=''; setTimeout(function(){t.focus();},30); }
+  function hide(){ m.classList.add('hidden'); }
+  function send(){
+    var ta=m.querySelector('#epicSuggTa'); var txt=(ta.value||'').trim();
+    if(txt.length<3){ m.querySelector('#epicSuggErr').textContent='Add a little more detail.'; return; }
+    var b=m.querySelector('#epicSuggSend'); b.disabled=true; b.textContent='Sending…';
+    var meta={ page:location.pathname, mode:(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())?'beta':'live' };
+    fetch(SB_URL+'/rest/v1/epic_suggestions',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({role:ROLE,text:txt,meta:meta})})
+    .then(function(r){ if(r.ok){ hide(); say('💡 Thanks! Sent to Bruce for review.'); } else { m.querySelector('#epicSuggErr').textContent='Could not send ('+r.status+'). Try again.'; } })
+    .catch(function(){ m.querySelector('#epicSuggErr').textContent='Network error — try again.'; })
+    .finally(function(){ b.disabled=false; b.textContent='Send to Bruce'; });
+  }
+  if(!(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())) return;   // 💡 suggestion box is beta-only
+  var btn=document.getElementById('epicSuggBtn');
+  if(btn){ btn.style.display=''; } else { btn=document.createElement('button'); btn.id='epicSuggBtn'; btn.className='epic-sugg-btn'; btn.textContent='💡 Suggestion'; btn.style.cssText='position:fixed;left:12px;bottom:14px;z-index:1200'; document.body.appendChild(btn); }
+  btn.onclick=show;
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){ if(e.target===m) hide(); });
+  m.querySelector('#epicSuggCancel').onclick=hide; m.querySelector('#epicSuggSend').onclick=send;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPIC Referral Partner — Refer & earn</title>
+<style>
+:root{--bg:#0a0e17;--bg2:#111827;--surface:#1f2937;--surface2:#273349;--border:#2d3a50;--text:#e8ecf2;--text2:#9ca3b4;--muted:#6b7280;--accent:#10b981;--gold:#f59e0b;--red:#ef4444;--blue:#3b82f6;--radius:12px;--radius-sm:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:16px}
+.wrap{max-width:940px;margin:0 auto}
+a.back{color:var(--text2);font-size:.78rem;text-decoration:none}a.back:hover{color:var(--text)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);margin:8px 0 14px}
+.brand h1{font-size:1.05rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand .sub{font-size:.72rem;color:var(--text2)}
+.stats{display:flex;gap:6px}.stat{text-align:center;padding:4px 11px;background:var(--surface);border-radius:var(--radius-sm)}
+.stat b{font-size:1.05rem;display:block;line-height:1.1}.stat span{font-size:.62rem;color:var(--text2);text-transform:uppercase;letter-spacing:.4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px;margin-bottom:12px}
+.lbl{font-size:.66rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px}
+.fld{margin-bottom:11px}.fld label{display:block;font-size:.74rem;color:var(--text2);margin-bottom:4px}
+.fld input,.fld textarea{width:100%;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.88rem;font-family:inherit}
+.fld input:focus,.fld textarea:focus{outline:none;border-color:var(--accent)}
+.vet{display:flex;gap:8px}
+.vet button{flex:1;padding:11px;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-weight:700;font-size:.82rem;text-align:left;line-height:1.4}
+.vet button small{display:block;font-weight:400;font-size:.68rem;color:var(--text2);margin-top:2px}
+.vet button.sel{background:rgba(16,185,129,.15);border-color:var(--accent);color:#7ff0c8}
+.vet button.sel small{color:#9fe8cf}
+.route{font-size:.8rem;margin:10px 0;padding:9px 11px;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);color:var(--text2)}
+.route b{color:var(--text)}
+.btn{width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--accent);color:#062a1e;font-weight:800;font-size:.92rem;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.ref{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:var(--bg2)}
+.ref .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ref .rn{font-weight:700;font-size:.9rem}
+.ref .badge{font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:999px}
+.b-closer{background:rgba(59,130,246,.16);color:#bcd4ff}.b-bdr{background:rgba(245,158,11,.16);color:#ffd58a}
+.ref .meta{font-size:.72rem;color:var(--text2);margin-top:3px}
+.track{display:flex;gap:5px;margin-top:8px}
+.track .st{flex:1;text-align:center;font-size:.6rem;padding:4px 2px;border-radius:6px;background:var(--surface);color:var(--muted)}
+.track .st.on{background:rgba(16,185,129,.18);color:#7ff0c8;font-weight:700}
+.pts{font-size:.72rem;color:var(--gold);font-weight:700;margin-top:6px}
+.rewards{font-size:.78rem;color:var(--text2);line-height:1.6}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+/* ── mobile-first (Referral is used mostly on phones) ── */
+@media(max-width:640px){
+  body{padding:12px}
+  header{flex-wrap:wrap;padding:11px 13px;gap:8px}
+  .brand h1{font-size:1.2rem}.brand .sub{font-size:.78rem}
+  .stats{width:100%;gap:6px}.stat{flex:1;padding:7px 4px}.stat b{font-size:1.1rem}
+  .panel{padding:14px}
+  .fld input,.fld textarea{font-size:16px;padding:12px}   /* 16px = no iOS zoom */
+  .vet{flex-direction:column}.vet button{font-size:.92rem;padding:14px}
+  .btn{padding:15px;font-size:1.02rem}
+  .rewards{font-size:.86rem}.ref .rn{font-size:.95rem}
+  .track .st{font-size:.62rem;padding:5px 2px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">← EPIC Suite</a> <button type="button" id="epicSuggBtn" class="epic-sugg-btn" style="display:none">💡 Suggest an improvement</button>
+  <header>
+    <div class="brand"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h1>🤝 EPIC Referral Partner</h1><span id="ver">v…</span></div><div class="sub">Refer people you care about — earn as they win</div></div>
+    <div class="stats">
+      <div class="stat"><b id="s-ref">4</b><span>referrals</span></div>
+      <div class="stat"><b id="s-book" style="color:var(--accent)">2</b><span>booked</span></div>
+      <div class="stat"><b id="s-won" style="color:var(--accent)">1</b><span>joined</span></div>
+      <div class="stat"><b id="s-pts" style="color:var(--gold)">1,250</b><span>points</span></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="lbl">➕ Refer someone</div>
+        <div class="fld"><label>Their name</label><input id="rName" placeholder="e.g. Jordan Alvarez"></div>
+        <div class="fld"><label>Phone or email</label><input id="rContact" placeholder="phone or email"></div>
+        <div class="fld"><label>How do you know them?</label><input id="rRel" placeholder="friend, family, business owner you know…"></div>
+        <div class="lbl">Have you already talked to them about EPIC LIFE?</div>
+        <div class="vet">
+          <button id="vetYes" data-v="vetted">✅ Yes — they're interested<small>Warm / vetted → straight to a Closer</small></button>
+          <button id="vetNo" class="sel" data-v="unvetted">🤝 Not yet — just a name<small>Unvetted → a Setter reaches out first</small></button>
+        </div>
+        <div class="fld" style="margin-top:11px"><label>Anything the team should know? (optional)</label><textarea id="rNote" rows="3" placeholder="what they do, what they're struggling with, best time to reach them…"></textarea></div>
+        <div class="route" id="route">Routing: <b>Unvetted → BDR / Setter</b> qualifies them, then books a Closer.</div>
+        <button class="btn" id="submit">Submit referral</button>
+      </div>
+      <div class="panel">
+        <div class="lbl">🎁 How you earn</div>
+        <div class="rewards">• <b>250 pts</b> when your referral books a call · <b>1,000 pts</b> when they join.<br>• Annual members earn <b>5× referral points</b> on every enrollment.<br>• Points convert to account credit &amp; member perks.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="lbl">📋 My referrals</div>
+        <div id="refList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+function toast(t){var e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1900);}
+let vet='unvetted';
+const STAGES=['Submitted','Contacted','Booked','Joined'];
+let REFS=[
+ {nm:'Priya Shah',rel:'business owner friend',route:'closer',stage:2,pts:250},
+ {nm:'Tom Nguyen',rel:'cousin',route:'bdr',stage:1,pts:0},
+ {nm:'Alicia Grant',rel:'neighbor',route:'closer',stage:3,pts:1000},
+ {nm:'Derek Cole',rel:'gym buddy',route:'bdr',stage:0,pts:0}
+];
+function setVet(v){ vet=v; $('vetYes').classList.toggle('sel',v==='vetted'); $('vetNo').classList.toggle('sel',v==='unvetted');
+  $('route').innerHTML=v==='vetted'?'Routing: <b>Vetted → Closer</b> takes it straight to a strategy call.':'Routing: <b>Unvetted → BDR / Setter</b> qualifies them, then books a Closer.'; }
+$('vetYes').onclick=()=>setVet('vetted'); $('vetNo').onclick=()=>setVet('unvetted');
+function renderRefs(){
+  $('refList').innerHTML=REFS.map(r=>'<div class="ref"><div class="top"><span class="rn">'+r.nm+'</span><span class="badge '+(r.route==='closer'?'b-closer':'b-bdr')+'">'+(r.route==='closer'?'→ Closer':'→ BDR')+'</span></div>'+
+    '<div class="meta">'+r.rel+'</div>'+
+    '<div class="track">'+STAGES.map((s,i)=>'<span class="st'+(i<=r.stage?' on':'')+'">'+s+'</span>').join('')+'</div>'+
+    (r.pts?'<div class="pts">+'+r.pts+' pts earned</div>':'')+'</div>').join('');
+}
+$('submit').onclick=()=>{
+  var nm=$('rName').value.trim(); if(!nm){toast('Add their name');return;}
+  var route=vet==='vetted'?'closer':'bdr';
+  REFS.unshift({nm:nm,rel:$('rRel').value.trim()||'referral',route:route,stage:0,pts:0});
+  $('s-ref').textContent=+$('s-ref').textContent+1;
+  renderRefs();
+  ['rName','rContact','rRel','rNote'].forEach(id=>$(id).value=''); setVet('unvetted');
+  toast(vet==='vetted'?'Sent to a Closer 🎯':'Sent to the BDR team 🤝');
+};
+setVet('unvetted'); renderRefs();
+</script>
+
+<!-- ===== EPIC Suite: beta toggle + What's new (self-contained) ===== -->
+<style>
+#epicChip{position:fixed;top:9px;right:12px;z-index:1200;display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);box-shadow:0 2px 10px rgba(0,0,0,.4);user-select:none;white-space:nowrap}
+#epicChip:hover{border-color:var(--accent);color:var(--text)}
+#epicChip.beta{background:rgba(245,158,11,.18);border-color:var(--gold);color:#ffd58a;animation:epicPulse 2s ease-in-out infinite}
+@keyframes epicPulse{0%,100%{opacity:1}50%{opacity:.6}}
+body{padding-top:46px}
+.epic-modal{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+.epic-modal.hidden{display:none}
+.epic-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:left}
+.epic-box h3{font-size:1.05rem;margin-bottom:6px}
+.epic-box p{font-size:.82rem;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.epic-box input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:1rem;letter-spacing:2px;text-align:center;text-transform:uppercase}
+.epic-box input:focus{outline:none;border-color:var(--gold)}
+.epic-err{color:var(--red);font-size:.76rem;margin-top:8px;min-height:16px;text-align:center}
+.epic-row{display:flex;gap:8px;margin-top:14px}
+.epic-row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:800;font-size:.85rem;cursor:pointer}
+.epic-go{background:var(--gold);color:#1a1200}.epic-cancel{background:var(--surface2);color:var(--text)}
+.epicv-box{max-width:520px;max-height:82vh;overflow:auto}
+.epicv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.epicv-head b{font-size:.98rem}.epic-x{cursor:pointer;color:var(--text2);font-size:1.1rem}
+.epicv-entry{padding:12px 0;border-bottom:1px solid var(--border)}.epicv-entry:last-child{border-bottom:none}
+.epicv-v{font-weight:800;color:var(--accent)}.epicv-d{font-size:.72rem;color:var(--muted);margin-left:8px}
+.epicv-entry ul{margin:8px 0 0;padding-left:18px}.epicv-entry li{font-size:.82rem;color:var(--text2);margin-bottom:6px;line-height:1.5}
+#ver{cursor:pointer;font-size:.68rem;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text2);white-space:nowrap;text-decoration:none}
+#ver:hover{border-color:var(--accent);color:var(--text)}
+#ver.new{color:#7ff0c8;background:rgba(16,185,129,.16);border-color:transparent;font-weight:700;animation:epicPulse 1.7s ease-in-out infinite}
+</style>
+<script>
+(function(){
+  var CODE='EPICBETA', KEY='epic_mode';
+  var E=window.EPIC=window.EPIC||{};
+  var FILE=/\.html?$/i.test(location.pathname);
+  E.isBeta=function(){ if(/\/beta(\/|$)/.test(location.pathname)) return true; if(FILE){try{return localStorage.getItem(KEY)==='beta'}catch(e){}} return false; };
+  function gotoBeta(){ try{localStorage.setItem(KEY,'beta')}catch(e){} if(FILE){location.reload();return;} location.href=location.pathname.replace(/(live|setter|referral|success)\/$/,'')+'beta/'; }
+  function gotoLive(){ try{localStorage.setItem(KEY,'live')}catch(e){} if(FILE){location.reload();return;} location.href=location.pathname.replace(/beta\/(live\/|setter\/|referral\/|success\/)?$/,''); }
+  var chip=document.createElement('div'); chip.id='epicChip';
+  function paint(){ if(E.isBeta()){chip.className='beta';chip.textContent='🧪 BETA · back to Live';chip.title="You're on the beta build — tap to return to Live";}
+    else{chip.className='';chip.textContent='🟢 Live · try beta';chip.title='Tap to enter the beta preview (code required)';} }
+  paint();
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>🧪 Try the beta</h3><p>Enter your beta code to preview the newest in-progress build across the EPIC Suite. Switch back to Live anytime from the chip in the corner.</p><input id="epicCodeIn" placeholder="beta code" autocomplete="off" spellcheck="false"><div class="epic-err" id="epicErr"></div><div class="epic-row"><button class="epic-cancel" id="epicCancel">Cancel</button><button class="epic-go" id="epicGo">Unlock beta</button></div></div>';
+  function showM(){m.classList.remove('hidden');var i=m.querySelector('#epicCodeIn');i.value='';m.querySelector('#epicErr').textContent='';setTimeout(function(){i.focus()},30);}
+  function hideM(){m.classList.add('hidden');}
+  function submitM(){var v=(m.querySelector('#epicCodeIn').value||'').trim().toUpperCase();
+    if(v===CODE){gotoBeta();}else{m.querySelector('#epicErr').textContent="That code didn't match. Try again.";}}
+  chip.onclick=function(){ if(E.isBeta()){gotoLive();} else {showM();} };
+  document.body.appendChild(chip); document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target===m)hideM();});
+  m.querySelector('#epicCancel').onclick=hideM; m.querySelector('#epicGo').onclick=submitM;
+  m.querySelector('#epicCodeIn').addEventListener('keydown',function(e){if(e.key==='Enter')submitM();});
+  // ---- What's new (per role) ----
+  var TITLE='EPIC Referral Partner', SEEN='epic_referral_seen';
+  var NOTES=[
+  {v:'1.0.1',d:'2026-07-02',n:[
+   "Optimized for mobile — bigger tap targets, phone-friendly forms (no zoom-on-tap), and a cleaner one-column layout.",
+  ]},
+  {v:'1.0.0',d:'2026-07-01',n:[
+   "Refer people you care about in seconds — add their name and how you know them, and say whether you've already talked to them about EPIC LIFE.",
+   "Smart routing: warm/vetted referrals go straight to a Closer; names you haven't pitched go to a BDR/Setter to qualify first.",
+   "Track every referral through Submitted → Contacted → Booked → Joined, and watch your points add up — 250 on a booked call, 1,000 when they join (Annual members earn 5×).",
+   "New: a version badge + this What's-new panel, and a 🧪 beta preview you can unlock with a code — switch back to Live anytime from the chip in the corner.",
+  ]},
+  ];
+  var badge=document.getElementById('ver');
+  if(badge&&NOTES.length){
+    var v=NOTES[0].v; badge.textContent='v'+v+" · what's new";
+    var vm=document.createElement('div'); vm.className='epic-modal hidden';
+    vm.innerHTML='<div class="epic-box epicv-box"><div class="epicv-head"><b>📋 What\'s new — '+TITLE+'</b><span class="epic-x">✕</span></div><div>'+
+      NOTES.map(function(p){return '<div class="epicv-entry"><span class="epicv-v">v'+p.v+'</span><span class="epicv-d">'+p.d+'</span><ul>'+p.n.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>';}).join('')+'</div></div>';
+    document.body.appendChild(vm);
+    badge.onclick=function(){vm.classList.remove('hidden');try{localStorage.setItem(SEEN,v)}catch(e){}badge.classList.remove('new');};
+    vm.querySelector('.epic-x').onclick=function(){vm.classList.add('hidden');};
+    vm.addEventListener('click',function(e){if(e.target===vm)vm.classList.add('hidden');});
+    try{if(localStorage.getItem(SEEN)!==v)badge.classList.add('new');}catch(e){}
+  }
+})();
+</script>
+
+<!-- ===== EPIC Suite: suggestion box → Supabase (central review) ===== -->
+<style>
+.epic-sugg-btn{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;padding:5px 11px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);vertical-align:middle;margin-left:8px}
+.epic-sugg-btn:hover{border-color:var(--accent);color:var(--text)}
+.epic-sugg-ta{width:100%;min-height:120px;padding:11px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem;font-family:inherit;resize:vertical}
+.epic-sugg-ta:focus{outline:none;border-color:var(--accent)}
+.epic-sugg-ok{background:var(--accent);color:#062a1e}
+</style>
+<script>
+(function(){
+  var SB_URL='https://widdgynledwpqaqndtvz.supabase.co';
+  var SB_KEY='sb_publishable_YTOYoDxjm7MpIuvvSjwOyQ_ToGCW3PQ';
+  var ROLE='EPIC Referral Partner';
+  function say(t){ try{ if(typeof toast==='function'){toast(t);return;} }catch(e){}
+    var d=document.createElement('div'); d.textContent=t;
+    d.style.cssText='position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:#7ff0c8;padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:700;z-index:1400';
+    document.body.appendChild(d); setTimeout(function(){d.remove();},2400); }
+  var m=document.createElement('div'); m.className='epic-modal hidden';
+  m.innerHTML='<div class="epic-box"><h3>💡 Share an idea</h3><p>What would make <b>'+ROLE+'</b> better? Your suggestion goes straight to Bruce for review.</p><textarea class="epic-sugg-ta" id="epicSuggTa" placeholder="An idea, a bug, or something confusing…"></textarea><div class="epic-err" id="epicSuggErr"></div><div class="epic-row"><button class="epic-cancel" id="epicSuggCancel">Cancel</button><button class="epic-go epic-sugg-ok" id="epicSuggSend">Send to Bruce</button></div></div>';
+  function show(){ m.classList.remove('hidden'); var t=m.querySelector('#epicSuggTa'); t.value=''; m.querySelector('#epicSuggErr').textContent=''; setTimeout(function(){t.focus();},30); }
+  function hide(){ m.classList.add('hidden'); }
+  function send(){
+    var ta=m.querySelector('#epicSuggTa'); var txt=(ta.value||'').trim();
+    if(txt.length<3){ m.querySelector('#epicSuggErr').textContent='Add a little more detail.'; return; }
+    var b=m.querySelector('#epicSuggSend'); b.disabled=true; b.textContent='Sending…';
+    var meta={ page:location.pathname, mode:(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())?'beta':'live' };
+    fetch(SB_URL+'/rest/v1/epic_suggestions',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({role:ROLE,text:txt,meta:meta})})
+    .then(function(r){ if(r.ok){ hide(); say('💡 Thanks! Sent to Bruce for review.'); } else { m.querySelector('#epicSuggErr').textContent='Could not send ('+r.status+'). Try again.'; } })
+    .catch(function(){ m.querySelector('#epicSuggErr').textContent='Network error — try again.'; })
+    .finally(function(){ b.disabled=false; b.textContent='Send to Bruce'; });
+  }
+  if(!(window.EPIC&&EPIC.isBeta&&EPIC.isBeta())) return;   // 💡 suggestion box is beta-only
+  var btn=document.getElementById('epicSuggBtn');
+  if(btn){ btn.style.display=''; } else { btn=document.createElement('button'); btn.id='epicSuggBtn'; btn.className='epic-sugg-btn'; btn.textContent='💡 Suggestion'; btn.style.cssText='position:fixed;left:12px;bottom:14px;z-index:1200'; document.body.appendChild(btn); }
+  btn.onclick=show;
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){ if(e.target===m) hide(); });
+  m.querySelector('#epicSuggCancel').onclick=hide; m.querySelector('#epicSuggSend').onclick=send;
+})();
+</script>
+</body>
+</html>
